@@ -128,8 +128,12 @@ final class ShelfView: NSView, NSDraggingSource {
         if let hit = itemRects.first(where: { $0.rect.contains(p) }) {
             menu.addItem(makeItem("Убрать с полки", #selector(removeItem(_:)), hit.url))
             menu.addItem(makeItem("Показать в Finder", #selector(revealItem(_:)), hit.url))
-            if transport.status(for: hit.url) == .failed {
-                menu.addItem(makeItem("Отправить ещё раз", #selector(retryItem(_:)), hit.url))
+            // отправка доступна для любого файла: дропнутые до настройки
+            // peerHost иначе никак не дослать
+            if transport.peerHost != nil, transport.status(for: hit.url) != .uploading {
+                let title = transport.status(for: hit.url) == .failed
+                    ? "Отправить ещё раз" : "Отправить на вторую машину"
+                menu.addItem(makeItem(title, #selector(retryItem(_:)), hit.url))
             }
             menu.addItem(.separator())
         }
