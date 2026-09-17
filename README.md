@@ -25,7 +25,7 @@ flowchart LR
     subgraph "Mac 2 (e.g. Mac mini)"
         E[Shelf ~/Shelf] -->|local drag<br/>inside Screen Sharing| F[Telegram / Finder]
     end
-    B -->|rsync/ssh over Tailscale| E
+    B <-->|rsync/ssh over Tailscale| E
 ```
 
 - The shelf is a transparent panel over the notch (`NSPanel`, never steals
@@ -108,7 +108,29 @@ seconds. Delivery status shows as a dot on the file's icon:
 🟠 uploading · 🟢 delivered · 🔴 failed (5 retries exhausted — right-click →
 resend after fixing the network).
 
-For the reverse direction (Mac 2 → Mac 1), mirror the same steps.
+### 3. Make it bidirectional (optional but recommended)
+
+Steps 1–2 set up Mac 1 → Mac 2 only. To also send files Mac 2 → Mac 1
+(drop something on Mac 2's shelf — e.g. inside a Screen Sharing session —
+and pick it up on Mac 1), mirror the same setup in the other direction:
+
+1. **On Mac 1**: enable Remote Login (System Settings → General → Sharing).
+2. **On Mac 2** (`<mac1>` is Mac 1's Tailscale hostname):
+
+   ```bash
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_chelka -C "chelka-transport"
+   ssh-copy-id -i ~/.ssh/id_chelka.pub <mac1>
+   printf '\nHost <mac1>\n  IdentityFile ~/.ssh/id_chelka\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+   ssh -o BatchMode=yes <mac1> 'echo ok'          # must print: ok
+   defaults write dev.mike.Chelka peerHost <mac1>
+   pkill -x Chelka; open /Applications/Chelka.app
+   ```
+
+Now anything dropped on either shelf appears on both machines.
+No sync loops can occur: the app only pushes files **dropped on that
+machine** — files that arrived from the peer are displayed, never re-sent.
+A file dropped before `peerHost` was configured can be sent later:
+right-click it → "Send to the other machine".
 
 > **Why a dedicated key?** Default `ssh-copy-id` picks whatever key it finds,
 > and keys with non-standard filenames aren't offered by ssh at all — you end
@@ -127,7 +149,7 @@ For the reverse direction (Mac 2 → Mac 1), mirror the same steps.
 | Take a file | hover the notch → drag the file out |
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
-| Resend | right-click a file with a red dot |
+| Send / resend to the peer | right-click the file → "Send to the other machine" |
 | Launch at login | right-click the shelf background |
 | Quit | right-click the shelf background |
 
