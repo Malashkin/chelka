@@ -1,5 +1,7 @@
-// Готовит иконку приложения из арта: полностью залитый квадрат без полей
-// и прозрачности — кроп внутри плитки, глубже её скруглённых углов.
+// Готовит иконку приложения из арта по сетке macOS: скруглённый квадрат
+// 824x824 по центру прозрачного холста 1024x1024 (иначе иконка в Launchpad
+// выглядит крупнее остальных и с прямыми углами — система отступы не рисует).
+// Кроп берётся изнутри плитки арта, глубже её ободка и углов.
 // Запуск: swift scripts/make-icon.swift Resources/icon-art.jpg Resources/AppIcon-1024.png
 import AppKit
 
@@ -22,11 +24,18 @@ guard let img = NSImage(contentsOfFile: args[1]),
 }
 
 let out = 1024
+// Сетка Apple для macOS-иконок: тело 824x824 по центру, радиус углов ~185.
+let body = CGRect(x: 100, y: 100, width: 824, height: 824)
+let cornerRadius: CGFloat = 185.4
+
 let ctx = CGContext(data: nil, width: out, height: out, bitsPerComponent: 8, bytesPerRow: 0,
                     space: CGColorSpace(name: CGColorSpace.sRGB)!,
                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
 ctx.interpolationQuality = .high
-ctx.draw(cropped, in: CGRect(x: 0, y: 0, width: CGFloat(out), height: CGFloat(out)))
+ctx.addPath(CGPath(roundedRect: body, cornerWidth: cornerRadius, cornerHeight: cornerRadius,
+                   transform: nil))
+ctx.clip()
+ctx.draw(cropped, in: body)
 
 guard let result = ctx.makeImage(),
       let png = NSBitmapImageRep(cgImage: result).representation(using: .png, properties: [:]) else {
