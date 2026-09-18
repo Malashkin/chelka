@@ -1,7 +1,5 @@
 # Chelka
 
-<p align="center"><img src="Resources/AppIcon-1024.png" width="128" alt="Иконка Chelka"></p>
-
 **Полка для файлов в чёлке MacBook — с синхронизацией на второй Mac через Tailscale.**
 
 English version: [README.md](README.md)
