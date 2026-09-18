@@ -197,6 +197,16 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 | Gatekeeper blocks the app on the second Mac | the .app was moved via AirDrop (quarantine) — see note above |
 | Can't find the shelf on a Mac without a notch | look for a translucent strip at the top-center of the screen |
 
+## Security model
+
+Both machines are assumed to belong to **the same person**: the transport key
+grants regular SSH access to the peer, and files arriving from it are trusted
+(no quarantine). The `peerHost` value is validated before reaching ssh/rsync
+(no option/shell injection), transfers never overwrite existing files on the
+receiver, and the app itself deletes only to the Trash. Full audit — threat
+model, findings, residual risks — lives in
+[docs/security/index.md](docs/security/index.md) (in Russian).
+
 ## Known limitations
 
 - Sandbox is off (the app spawns ssh/rsync) — so no Mac App Store.

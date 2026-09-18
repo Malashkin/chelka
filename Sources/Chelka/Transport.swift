@@ -1,4 +1,5 @@
 import AppKit
+import ChelkaCore
 
 /// Push файла на удалённую машину: rsync поверх ssh по Tailscale MagicDNS.
 /// Пир задаётся `defaults write dev.mike.Chelka peerHost <host>`; пусто — полка локальная.
@@ -14,9 +15,14 @@ final class Transport {
     private static let retryDelay: TimeInterval = 15
 
     var peerHost: String? {
-        guard let v = UserDefaults.standard.string(forKey: "peerHost"),
-              !v.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return v.trimmingCharacters(in: .whitespaces)
+        guard let v = UserDefaults.standard.string(forKey: "peerHost") else { return nil }
+        let trimmed = v.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        guard PeerHost.isValid(trimmed) else {
+            NSLog("Chelka: peerHost «\(trimmed)» отклонён валидацией (допустимы hostname/FQDN/IPv4, опционально user@)")
+            return nil
+        }
+        return trimmed
     }
 
     func status(for url: URL) -> Status? { statuses[url.lastPathComponent] }
@@ -63,8 +69,11 @@ final class Transport {
         let sshOptsList = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
                            "-o", "StrictHostKeyChecking=accept-new"]
         let sshOptsLine = "/usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
-        guard run("/usr/bin/ssh", sshOptsList + [peer, "mkdir -p Shelf"]) else { return false }
-        return run("/usr/bin/rsync", ["-a", "-e", sshOptsLine, file.path, "\(peer):Shelf/"])
+        // "--" отделяет опции от хоста; --ignore-existing не даёт перезаписать
+        // на приёмнике чужой одноимённый файл (потеря данных)
+        guard run("/usr/bin/ssh", sshOptsList + ["--", peer, "mkdir -p Shelf"]) else { return false }
+        return run("/usr/bin/rsync",
+                   ["-a", "--ignore-existing", "-e", sshOptsLine, file.path, "\(peer):Shelf/"])
     }
 
     private func run(_ tool: String, _ args: [String]) -> Bool {

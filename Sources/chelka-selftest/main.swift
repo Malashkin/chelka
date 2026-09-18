@@ -98,6 +98,28 @@ if let square = ShelfGeometry.aspectFitRect(content: CGSize(width: 200, height: 
 
 expect(ShelfGeometry.aspectFitRect(content: .zero, in: box) == nil, true, "fit: нулевой размер -> nil")
 
+// MARK: - Безопасность: peerHost попадает в аргументы ssh/rsync — значение,
+// похожее на опцию или shell-конструкцию, обязано отклоняться
+
+expect(PeerHost.isValid("my-mac-mini"), true, "peer: простое имя")
+expect(PeerHost.isValid("my-mac-mini.tailf00d.ts.net"), true, "peer: FQDN")
+expect(PeerHost.isValid("100.108.22.20"), true, "peer: IPv4")
+expect(PeerHost.isValid("alice@my-mac-mini"), true, "peer: user@host")
+expect(PeerHost.isValid("a_user.name@host-1.example.com"), true, "peer: user с ._-")
+
+expect(PeerHost.isValid(""), false, "peer: пустое отклонено")
+expect(PeerHost.isValid("-oProxyCommand=evil"), false, "peer: опция ssh отклонена")
+expect(PeerHost.isValid("host -oProxyCommand=evil"), false, "peer: пробел + опция отклонены")
+expect(PeerHost.isValid("host;rm -rf ~"), false, "peer: точка с запятой отклонена")
+expect(PeerHost.isValid("host`id`"), false, "peer: backticks отклонены")
+expect(PeerHost.isValid("host$(id)"), false, "peer: $() отклонено")
+expect(PeerHost.isValid("host\nevil"), false, "peer: перевод строки отклонён")
+expect(PeerHost.isValid("a@b@c"), false, "peer: двойной @ отклонён")
+expect(PeerHost.isValid("-user@host"), false, "peer: user с дефиса отклонён")
+expect(PeerHost.isValid(".host"), false, "peer: host с точки отклонён")
+expect(PeerHost.isValid("host..name"), false, "peer: двойная точка отклонена")
+expect(PeerHost.isValid(String(repeating: "a", count: 400)), false, "peer: сверхдлинное отклонено")
+
 // MARK: - итог
 
 if failures > 0 {
