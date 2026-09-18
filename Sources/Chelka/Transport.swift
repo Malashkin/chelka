@@ -50,6 +50,18 @@ final class Transport {
         }
     }
 
+    /// Очистить полку пира (обёртка на той стороне переносит файлы в Корзину).
+    func clearPeer() {
+        guard let peer = peerHost else { return }
+        workQueue.async { [self] in
+            if run(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
+                NSLog("Chelka: полка на \(peer) очищена")
+            } else {
+                NSLog("Chelka: очистка полки на \(peer) не удалась (старая обёртка на пире? обновите ~/.chelka-receive)")
+            }
+        }
+    }
+
     private func set(_ file: URL, _ s: Status) {
         statuses[file.lastPathComponent] = s
         onChange?()

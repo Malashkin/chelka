@@ -12,6 +12,9 @@ final class ThumbnailCache {
 
     private var thumbs: [String: NSImage] = [:]
     private var pending: Set<String> = []
+    /// Файлы, для которых превью не генерится (архивы и т.п.) — не дёргать
+    /// QuickLook заново на каждой перерисовке.
+    private var failed: Set<String> = []
     private let side: CGFloat = 48
 
     /// Превью, если уже готово; nil — ещё генерируется или не поддерживается.
@@ -24,11 +27,12 @@ final class ThumbnailCache {
     func prune(keeping urls: [URL]) {
         let keep = Set(urls.map(\.path))
         thumbs = thumbs.filter { keep.contains($0.key) }
+        failed.formIntersection(keep)
     }
 
     private func request(_ url: URL) {
         let key = url.path
-        guard !pending.contains(key) else { return }
+        guard !pending.contains(key), !failed.contains(key) else { return }
         pending.insert(key)
         let scale = NSScreen.main?.backingScaleFactor ?? 2
         let req = QLThumbnailGenerator.Request(fileAt: url,
@@ -39,10 +43,11 @@ final class ThumbnailCache {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.pending.remove(key)
-                // rep == nil для типов без превью (архивы и т.п.) — останется иконка
                 if let cg = rep?.cgImage {
                     self.thumbs[key] = NSImage(cgImage: cg, size: .zero)
                     self.onThumbnail?()
+                } else {
+                    self.failed.insert(key) // типы без превью — останется иконка
                 }
             }
         }

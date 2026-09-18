@@ -37,9 +37,10 @@ final class ShelfView: NSView, NSDraggingSource {
         super.updateTrackingAreas()
     }
 
-    private func setExpanded(_ e: Bool) {
+    private func setExpanded(_ e: Bool, reason: StaticString = #function) {
         guard expanded != e else { return }
         expanded = e
+        NSLog("Chelka: полка -> \(e ? "раскрыта" : "свернута") (\(reason))")
         onExpandChange?(e)
         needsDisplay = true
     }
@@ -142,6 +143,12 @@ final class ShelfView: NSView, NSDraggingSource {
             clear.target = self
             menu.addItem(clear)
         }
+        if transport.peerHost != nil {
+            let clearBoth = NSMenuItem(title: "Очистить на обеих машинах",
+                                       action: #selector(clearBothShelves), keyEquivalent: "")
+            clearBoth.target = self
+            menu.addItem(clearBoth)
+        }
 
         let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLoginItem), keyEquivalent: "")
         login.target = self
@@ -189,6 +196,11 @@ final class ShelfView: NSView, NSDraggingSource {
     }
 
     @objc private func clearShelf() { store.clear() }
+
+    @objc private func clearBothShelves() {
+        store.clear()
+        transport.clearPeer()
+    }
 
     @objc private func quitApp() { NSApp.terminate(nil) }
 

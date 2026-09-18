@@ -58,7 +58,8 @@ Security (each one is audited and tested; see [docs/security/index.md](docs/secu
    argument arrays. Do not introduce `sh -c`, string interpolation into
    commands, or `system()`.
 3. **The wrapper contract**: the transport key on a receiver may only run
-   `mkdir -p Shelf` and `rsync --server … . Shelf/` (no `--sender`). If you
+   `mkdir -p Shelf`, `chelka-clear` (Shelf contents → Trash, recoverable) and
+   `rsync --server … . Shelf/` (no `--sender`). If you
    change Transport's remote commands, update `scripts/chelka-receive.sh`
    and its tests together, and mind setups with the old wrapper deployed.
 4. **`StrictHostKeyChecking=yes`** in transport — pinning happens at

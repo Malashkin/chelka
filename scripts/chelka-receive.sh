@@ -21,6 +21,21 @@ case "$cmd" in
   "mkdir -p Shelf")
     mkdir -p "$HOME/Shelf"
     exit 0 ;;
+  "chelka-clear")
+    # очистка полки по явной команде с пира: только в Корзину (восстановимо)
+    if [ "${CHELKA_RECEIVE_TEST:-}" = "1" ]; then
+        echo "WOULD-CLEAR"
+        exit 0
+    fi
+    mkdir -p "$HOME/.Trash"
+    for f in "$HOME/Shelf"/*; do
+        [ -e "$f" ] || continue
+        base=$(basename "$f")
+        dest="$HOME/.Trash/$base"
+        [ -e "$dest" ] && dest="$HOME/.Trash/$base-$(date +%s)-$$"
+        mv "$f" "$dest"
+    done
+    exit 0 ;;
   "rsync --server "*" . Shelf/" | "/usr/bin/rsync --server "*" . Shelf/")
     case "$cmd" in *--sender*) reject ;; esac    # чтение с этой машины запрещено
     mkdir -p "$HOME/Shelf"

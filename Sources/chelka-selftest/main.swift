@@ -169,6 +169,67 @@ expect(receive("rsync --server -logDtpre. . Shelf/ && id").code, 1,
        "receive: && отклонено")
 expect(receive("bash -c 'rsync --server . Shelf/'").code, 1,
        "receive: обёртка в bash отклонена")
+expect(receive("chelka-clear").code, 0, "receive: команда очистки разрешена")
+expect(receive("chelka-clear").out.hasPrefix("WOULD-CLEAR"), true,
+       "receive: очистка — именно ветка clear")
+expect(receive("chelka-clear; id").code, 1, "receive: clear с метасимволом отклонён")
+expect(receive("chelka-clear-all").code, 1, "receive: похожая команда отклонена")
+
+// clear в боевом режиме — на подставном HOME: файлы уезжают в Корзину
+do {
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("chelka-clear-test-\(ProcessInfo.processInfo.processIdentifier)")
+    let shelf = tmp.appendingPathComponent("Shelf")
+    try FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
+    try "a".write(to: shelf.appendingPathComponent("a.txt"), atomically: true, encoding: .utf8)
+    try "b".write(to: shelf.appendingPathComponent("файл b.txt"), atomically: true, encoding: .utf8)
+
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/bin/sh")
+    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/chelka-receive.sh"]
+    var env = ProcessInfo.processInfo.environment
+    env["SSH_ORIGINAL_COMMAND"] = "chelka-clear"
+    env["HOME"] = tmp.path
+    env.removeValue(forKey: "CHELKA_RECEIVE_TEST")
+    p.environment = env
+    try p.run()
+    p.waitUntilExit()
+
+    let shelfLeft = (try? FileManager.default.contentsOfDirectory(atPath: shelf.path))?.count ?? -1
+    let inTrash = (try? FileManager.default.contentsOfDirectory(atPath: tmp.appendingPathComponent(".Trash").path))?.count ?? -1
+    expect(p.terminationStatus, 0, "clear: боевой запуск успешен")
+    expect(shelfLeft, 0, "clear: полка пуста")
+    expect(inTrash, 2, "clear: оба файла в Корзине (включая имя с пробелом)")
+    try? FileManager.default.removeItem(at: tmp)
+} catch {
+    print("FAIL clear: \(error)")
+    failures += 1
+}
+
+// MARK: - Автоочистка: возраст считается от появления на полке, не от mtime
+
+let t0 = Date(timeIntervalSince1970: 1_000_000)
+let day: Double = 86400
+
+let seen0 = Sync.updatedSeen(current: ["a", "b"], seen: ["a": t0], now: t0.addingTimeInterval(day))
+expect(seen0["a"], t0, "seen: у старого файла дата сохраняется")
+expect(seen0["b"], t0.addingTimeInterval(day), "seen: новый получает текущую дату")
+expect(Sync.updatedSeen(current: ["a"], seen: ["a": t0, "gone": t0], now: t0)["gone"], nil,
+       "seen: записи об удалённых выбрасываются")
+
+let week = ["old": t0, "fresh": t0.addingTimeInterval(6 * day)]
+expect(Sync.expired(seen: week, now: t0.addingTimeInterval(7.5 * day), retentionDays: 7), ["old"],
+       "expire: старше недели — просрочен, свежий — нет")
+expect(Sync.expired(seen: week, now: t0.addingTimeInterval(7 * day), retentionDays: 7), [],
+       "expire: ровно 7 дней — ещё не просрочен")
+expect(Sync.expired(seen: week, now: t0.addingTimeInterval(100 * day), retentionDays: 0), [],
+       "expire: retentionDays 0 — автоочистка выключена")
+
+// MARK: - PushPlan.clearArgs
+
+let cl = PushPlan.clearArgs(peer: "peer-host")
+expect(cl.contains("--"), true, "clear-args: '--' отделяет опции от хоста")
+expect(cl.last, "chelka-clear", "clear-args: единственная команда — chelka-clear")
 
 // MARK: - PushPlan: инварианты транспорта зашиты в аргументы (общие для app и MCP)
 

@@ -15,6 +15,12 @@ public enum PushPlan {
         sshOptions + ["--", peer, "mkdir -p Shelf"]
     }
 
+    /// ssh <opts> -- <peer> "chelka-clear" — очистка полки пира (только в
+    /// Корзину; на приёмнике команду исполняет обёртка chelka-receive.sh)
+    public static func clearArgs(peer: String) -> [String] {
+        sshOptions + ["--", peer, "chelka-clear"]
+    }
+
     /// rsync -a --ignore-existing -e "ssh <opts>" <file> <peer>:Shelf/
     public static func rsyncArgs(filePath: String, peer: String) -> [String] {
         ["-a", "--ignore-existing",

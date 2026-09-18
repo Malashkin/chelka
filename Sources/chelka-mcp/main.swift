@@ -77,8 +77,12 @@ let toolDefinitions: [[String: Any]] = [
     ],
     [
         "name": "shelf_clear",
-        "description": "Очистить полку Chelka: убрать все файлы в Корзину (восстановимо).",
-        "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
+        "description": "Очистить полку Chelka: убрать все файлы в Корзину (восстановимо). peer=true — очистить и полку второй машины (тоже в её Корзину).",
+        "inputSchema": [
+            "type": "object",
+            "properties": ["peer": ["type": "boolean", "description": "Очистить и полку пира (по умолчанию false)"]],
+            "required": [String](),
+        ],
     ],
 ]
 
@@ -184,10 +188,9 @@ func remove(_ args: [String: Any]) -> (String, Bool) {
     }
 }
 
-func clearShelf() -> (String, Bool) {
+func clearShelf(_ args: [String: Any]) -> (String, Bool) {
     let urls = (try? FileManager.default.contentsOfDirectory(
         at: shelfDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
-    if urls.isEmpty { return ("Полка уже пуста.", false) }
     var trashed = 0
     var failed: [String] = []
     for url in urls {
@@ -198,8 +201,26 @@ func clearShelf() -> (String, Bool) {
             failed.append(url.lastPathComponent)
         }
     }
-    if failed.isEmpty { return ("Полка очищена: \(trashed) файл(ов) в Корзине.", false) }
-    return ("Убрано \(trashed), не удалось: \(failed.joined(separator: ", "))", true)
+    var report = urls.isEmpty ? "Локальная полка уже пуста."
+        : "Локальная полка: \(trashed) файл(ов) в Корзине."
+    var isError = false
+    if !failed.isEmpty {
+        report += " Не удалось: \(failed.joined(separator: ", "))."
+        isError = true
+    }
+
+    if (args["peer"] as? Bool) == true {
+        guard let peerRaw = UserDefaults(suiteName: "dev.mike.Chelka")?.string(forKey: "peerHost"),
+              case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
+              !peer.isEmpty, PeerHost.isValid(peer) else {
+            return (report + " Полка пира не тронута: peerHost не настроен или не прошёл валидацию.", true)
+        }
+        if let err = runProcess(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
+            return (report + " Очистка на \(peer) не удалась: \(err) (старая обёртка на пире?)", true)
+        }
+        report += " Полка на \(peer) очищена (в её Корзину)."
+    }
+    return (report, isError)
 }
 
 /// nil — успех; иначе текст ошибки (stderr или код).
@@ -260,7 +281,7 @@ while let line = readLine(strippingNewline: true) {
             let (text, isError) = remove(args)
             replyText(id, text, isError: isError)
         case "shelf_clear":
-            let (text, isError) = clearShelf()
+            let (text, isError) = clearShelf(args)
             replyText(id, text, isError: isError)
         default:
             replyError(id, code: -32602, message: "Неизвестный инструмент")

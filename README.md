@@ -153,7 +153,9 @@ ssh -o BatchMode=yes <peer> 'mkdir -p Shelf' && echo "transport ok"
 ```
 
 (The `echo ok` test from step 2 will fail after this — that's the point.
-For a bidirectional setup, repeat on the other machine.)
+For a bidirectional setup, repeat on the other machine. The wrapper also
+enables "clear both shelves" — after updating the app, re-run the `scp`
+command above to refresh it.)
 
 > **Why a dedicated key?** Default `ssh-copy-id` picks whatever key it finds,
 > and keys with non-standard filenames aren't offered by ssh at all — you end
@@ -174,8 +176,14 @@ For a bidirectional setup, repeat on the other machine.)
 | Reveal in Finder | right-click the file |
 | Send / resend to the peer | right-click the file → "Send to the other machine" |
 | Clear the shelf | right-click the shelf background → "Очистить полку" |
+| Clear both shelves | right-click the shelf background → "Очистить на обеих машинах" |
 | Launch at login | right-click the shelf background |
 | Quit | right-click the shelf background |
+
+**Auto-cleanup**: files that have been on the shelf longer than 7 days are
+moved to the Trash automatically (age is counted from when the file appeared
+on the shelf, not from its mtime). Tune or disable:
+`defaults write dev.mike.Chelka retentionDays <N>` (0 disables).
 
 ## Development
 
@@ -223,7 +231,7 @@ client) can use the shelf directly — no shell commands:
 | `shelf_grab` | copy a file from the shelf into a directory (`keep:false` = move) |
 | `shelf_put` | put a file onto the shelf; `send:true` also pushes it to the peer |
 | `shelf_remove` | move a shelf file to the Trash |
-| `shelf_clear` | clear the shelf (everything goes to the Trash) |
+| `shelf_clear` | clear the shelf; `peer:true` clears the second Mac's shelf too (both to Trash) |
 
 Register once after `make install`:
 
