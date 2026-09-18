@@ -47,7 +47,10 @@ final class ShelfView: NSView, NSDraggingSource {
 
     private func mouseInsideWindow() -> Bool {
         guard let w = window else { return false }
-        return w.frame.contains(NSEvent.mouseLocation)
+        // Допуск 4pt: у верхней кромки экрана (куда курсор упирается, целясь
+        // в чёлку) NSEvent.mouseLocation.y == maxY, а NSRect.contains верхнюю
+        // границу не включает — без допуска полка мигает (expand/collapse цикл).
+        return w.frame.insetBy(dx: -4, dy: -4).contains(NSEvent.mouseLocation)
     }
 
     // MARK: наведение мыши (чтобы вытащить файл, наводимся на чёлку)
