@@ -9,6 +9,14 @@ updated: 2026-09-18
 
 ## [Unreleased]
 
+### Added
+- MCP-сервер в бандле приложения (Sources/chelka-mcp, stdio JSON-RPC без
+  зависимостей): инструменты shelf_list / shelf_grab / shelf_put (send:true —
+  отправка на пира тем же защищённым транспортом) / shelf_remove; .mcp.json
+  для Claude Code, сниппет для Codex в README. Транспортные аргументы вынесены
+  в ChelkaCore.PushPlan (общие для приложения и MCP), имена файлов —
+  ShelfName.isSafe; тестов 77.
+
 ## [0.1.0] — 2026-09-18
 
 Первый публичный релиз.

@@ -10,5 +10,6 @@ let package = Package(
         .target(name: "ChelkaCore", path: "Sources/ChelkaCore"),
         .executableTarget(name: "Chelka", dependencies: ["ChelkaCore"], path: "Sources/Chelka"),
         .executableTarget(name: "chelka-selftest", dependencies: ["ChelkaCore"], path: "Sources/chelka-selftest"),
+        .executableTarget(name: "chelka-mcp", dependencies: ["ChelkaCore"], path: "Sources/chelka-mcp"),
     ]
 )

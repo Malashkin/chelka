@@ -170,6 +170,26 @@ expect(receive("rsync --server -logDtpre. . Shelf/ && id").code, 1,
 expect(receive("bash -c 'rsync --server . Shelf/'").code, 1,
        "receive: обёртка в bash отклонена")
 
+// MARK: - PushPlan: инварианты транспорта зашиты в аргументы (общие для app и MCP)
+
+let mk = PushPlan.mkdirArgs(peer: "peer-host")
+expect(mk.contains("--"), true, "push: '--' отделяет опции от хоста")
+expect(mk.last, "mkdir -p Shelf", "push: единственная команда — mkdir Shelf")
+expect(mk.joined(separator: " ").contains("StrictHostKeyChecking=yes"), true, "push: строгая проверка host key (ssh)")
+
+let rs = PushPlan.rsyncArgs(filePath: "/tmp/a.txt", peer: "peer-host")
+expect(rs.contains("--ignore-existing"), true, "push: приёмник не перезаписывается")
+expect(rs.last, "peer-host:Shelf/", "push: назначение — только Shelf/")
+expect(rs.joined(separator: " ").contains("BatchMode=yes"), true, "push: BatchMode (без интерактива)")
+
+// MARK: - ShelfName: операции по имени не должны выходить за пределы полки
+
+expect(ShelfName.isSafe("отчёт.pdf"), true, "name: обычное имя допустимо")
+expect(ShelfName.isSafe("a/b.txt"), false, "name: разделитель пути отклонён")
+expect(ShelfName.isSafe("../secret"), false, "name: path traversal отклонён")
+expect(ShelfName.isSafe(".ssh"), false, "name: скрытые файлы отклонены")
+expect(ShelfName.isSafe(""), false, "name: пустое отклонено")
+
 // MARK: - итог
 
 if failures > 0 {

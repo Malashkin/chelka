@@ -43,6 +43,7 @@ target `Sources/chelka-selftest` (plain assertions, non-zero exit on failure).
 | `Sources/Chelka/ThumbnailCache.swift` | QuickLook previews (async) |
 | `Sources/Chelka/Transport.swift` | rsync/ssh push, retries, delivery status |
 | `Sources/chelka-selftest/` | the whole test suite |
+| `Sources/chelka-mcp/` | MCP server (stdio JSON-RPC, no deps): shelf_list/grab/put/remove for agents |
 | `scripts/chelka-receive.sh` | forced-command wrapper for the transport ssh key |
 | `scripts/make-icon.swift` | app icon from `Resources/icon-art.jpg` (macOS grid: 824×824 body on 1024 canvas) |
 
@@ -102,6 +103,11 @@ UI:
   rsync -a --ignore-existing -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes" <file> <peer>:Shelf/
   ```
 - App logs: `log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact`.
+- MCP: the server ships inside the app bundle
+  (`/Applications/Chelka.app/Contents/MacOS/chelka-mcp`); the repo's `.mcp.json`
+  registers it for Claude Code in-project. Smoke test: pipe JSON-RPC lines
+  (initialize → tools/list → tools/call) into the binary. shelf_put send:true
+  must keep using PushPlan — same security invariants as Transport.
 
 ## Common tasks
 

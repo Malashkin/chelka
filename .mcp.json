@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "chelka": {
+      "command": "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+    }
+  }
+}

@@ -211,6 +211,35 @@ scripts/
 
 More docs (mostly in Russian) live in [docs/](docs/index.md).
 
+## MCP server for AI agents
+
+The app bundle ships an MCP server, so agents (Claude Code, Codex, any MCP
+client) can use the shelf directly — no shell commands:
+
+| Tool | Does |
+|---|---|
+| `shelf_list` | list files on the shelf |
+| `shelf_grab` | copy a file from the shelf into a directory (`keep:false` = move) |
+| `shelf_put` | put a file onto the shelf; `send:true` also pushes it to the peer |
+| `shelf_remove` | move a shelf file to the Trash |
+
+Register once after `make install`:
+
+```bash
+# Claude Code (inside this repo, .mcp.json does it automatically)
+claude mcp add chelka /Applications/Chelka.app/Contents/MacOS/chelka-mcp -s user
+```
+
+```toml
+# Codex (~/.codex/config.toml)
+[mcp_servers.chelka]
+command = "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+```
+
+`shelf_put` with `send:true` uses the same hardened transport as the app
+(peerHost validation, BatchMode, pinned host keys, `--ignore-existing`);
+file names are validated against path traversal.
+
 ## Troubleshooting
 
 App logs:

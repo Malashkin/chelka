@@ -9,6 +9,7 @@ APP=build/Chelka.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Chelka "$APP/Contents/MacOS/Chelka"
+cp .build/release/chelka-mcp "$APP/Contents/MacOS/chelka-mcp"
 
 # Иконка: лоб с чёлкой на фоне ковра (Resources/AppIcon-1024.png -> .icns)
 ICONSET=build/AppIcon.iconset

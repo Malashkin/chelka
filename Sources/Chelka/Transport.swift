@@ -62,18 +62,11 @@ final class Transport {
 
     // ssh mkdir -p + rsync -a. rsync пишет во временный дот-файл и атомарно
     // переименовывает в конце — watcher на приёмнике не увидит недокачанное
-    // (скрытые файлы полка не показывает).
+    // (скрытые файлы полка не показывает). Аргументы команд — PushPlan
+    // (общие с MCP-сервером, инварианты безопасности зашиты там).
     private func runPush(file: URL, peer: String) -> Bool {
-        // StrictHostKeyChecking=yes: host key пиннится один раз на шаге
-        // ssh-copy-id (интерактивно), дальше подмена узла = жёсткий отказ
-        let sshOptsList = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
-                           "-o", "StrictHostKeyChecking=yes"]
-        let sshOptsLine = "/usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=yes"
-        // "--" отделяет опции от хоста; --ignore-existing не даёт перезаписать
-        // на приёмнике чужой одноимённый файл (потеря данных)
-        guard run("/usr/bin/ssh", sshOptsList + ["--", peer, "mkdir -p Shelf"]) else { return false }
-        return run("/usr/bin/rsync",
-                   ["-a", "--ignore-existing", "-e", sshOptsLine, file.path, "\(peer):Shelf/"])
+        guard run(PushPlan.sshExecutable, PushPlan.mkdirArgs(peer: peer)) else { return false }
+        return run(PushPlan.rsyncExecutable, PushPlan.rsyncArgs(filePath: file.path, peer: peer))
     }
 
     private func run(_ tool: String, _ args: [String]) -> Bool {

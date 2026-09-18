@@ -187,6 +187,35 @@ make deploy   # install + залить сборку на вторую машин
 Структура исходников и остальная документация — в [README.md](README.md#development)
 и [docs/](docs/index.md).
 
+## MCP-сервер для ИИ-агентов
+
+В бандле приложения едет MCP-сервер: агенты (Claude Code, Codex, любой
+MCP-клиент) работают с полкой напрямую, без shell-команд:
+
+| Инструмент | Что делает |
+|---|---|
+| `shelf_list` | список файлов на полке |
+| `shelf_grab` | забрать файл с полки в каталог (`keep:false` — перенос) |
+| `shelf_put` | положить файл на полку; `send:true` — и отправить на пира |
+| `shelf_remove` | убрать файл с полки в Корзину |
+
+Регистрация один раз после `make install`:
+
+```bash
+# Claude Code (внутри этого репозитория .mcp.json подхватится сам)
+claude mcp add chelka /Applications/Chelka.app/Contents/MacOS/chelka-mcp -s user
+```
+
+```toml
+# Codex (~/.codex/config.toml)
+[mcp_servers.chelka]
+command = "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+```
+
+`shelf_put` с `send:true` использует тот же защищённый транспорт, что и
+приложение (валидация peerHost, BatchMode, запиненные host key,
+`--ignore-existing`); имена файлов проверяются от path traversal.
+
 ## Отладка
 
 Логи приложения:
