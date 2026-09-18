@@ -137,6 +137,12 @@ final class ShelfView: NSView, NSDraggingSource {
             }
             menu.addItem(.separator())
         }
+        if !store.files.isEmpty {
+            let clear = NSMenuItem(title: "Очистить полку", action: #selector(clearShelf), keyEquivalent: "")
+            clear.target = self
+            menu.addItem(clear)
+        }
+
         let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLoginItem), keyEquivalent: "")
         login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -181,6 +187,8 @@ final class ShelfView: NSView, NSDraggingSource {
         guard let url = sender.representedObject as? URL else { return }
         transport.push(url)
     }
+
+    @objc private func clearShelf() { store.clear() }
 
     @objc private func quitApp() { NSApp.terminate(nil) }
 

@@ -76,6 +76,14 @@ final class ShelfStore {
         reload()
     }
 
+    /// Очистить полку: все файлы — в Корзину (восстановимо).
+    func clear() {
+        for url in files {
+            try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        }
+        reload()
+    }
+
     private func currentNames() -> Set<String> {
         Set((try? FileManager.default.contentsOfDirectory(atPath: Self.dir.path)) ?? [])
     }

@@ -75,6 +75,11 @@ let toolDefinitions: [[String: Any]] = [
             "required": ["name"],
         ],
     ],
+    [
+        "name": "shelf_clear",
+        "description": "Очистить полку Chelka: убрать все файлы в Корзину (восстановимо).",
+        "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
+    ],
 ]
 
 func listShelf() -> String {
@@ -179,6 +184,24 @@ func remove(_ args: [String: Any]) -> (String, Bool) {
     }
 }
 
+func clearShelf() -> (String, Bool) {
+    let urls = (try? FileManager.default.contentsOfDirectory(
+        at: shelfDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+    if urls.isEmpty { return ("Полка уже пуста.", false) }
+    var trashed = 0
+    var failed: [String] = []
+    for url in urls {
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            trashed += 1
+        } catch {
+            failed.append(url.lastPathComponent)
+        }
+    }
+    if failed.isEmpty { return ("Полка очищена: \(trashed) файл(ов) в Корзине.", false) }
+    return ("Убрано \(trashed), не удалось: \(failed.joined(separator: ", "))", true)
+}
+
 /// nil — успех; иначе текст ошибки (stderr или код).
 func runProcess(_ tool: String, _ args: [String]) -> String? {
     let p = Process()
@@ -235,6 +258,9 @@ while let line = readLine(strippingNewline: true) {
             replyText(id, text, isError: isError)
         case "shelf_remove":
             let (text, isError) = remove(args)
+            replyText(id, text, isError: isError)
+        case "shelf_clear":
+            let (text, isError) = clearShelf()
             replyText(id, text, isError: isError)
         default:
             replyError(id, code: -32602, message: "Неизвестный инструмент")

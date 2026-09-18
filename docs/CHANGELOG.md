@@ -10,6 +10,8 @@ updated: 2026-09-18
 ## [Unreleased]
 
 ### Added
+- Очистка полки: пункт меню «Очистить полку» в приложении и инструмент
+  shelf_clear в MCP (всё уходит в Корзину, восстановимо).
 - MCP-сервер в бандле приложения (Sources/chelka-mcp, stdio JSON-RPC без
   зависимостей): инструменты shelf_list / shelf_grab / shelf_put (send:true —
   отправка на пира тем же защищённым транспортом) / shelf_remove; .mcp.json

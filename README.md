@@ -173,6 +173,7 @@ For a bidirectional setup, repeat on the other machine.)
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
 | Send / resend to the peer | right-click the file → "Send to the other machine" |
+| Clear the shelf | right-click the shelf background → "Очистить полку" |
 | Launch at login | right-click the shelf background |
 | Quit | right-click the shelf background |
 
@@ -222,6 +223,7 @@ client) can use the shelf directly — no shell commands:
 | `shelf_grab` | copy a file from the shelf into a directory (`keep:false` = move) |
 | `shelf_put` | put a file onto the shelf; `send:true` also pushes it to the peer |
 | `shelf_remove` | move a shelf file to the Trash |
+| `shelf_clear` | clear the shelf (everything goes to the Trash) |
 
 Register once after `make install`:
 
