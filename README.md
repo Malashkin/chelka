@@ -14,6 +14,9 @@ configured, a copy of the file automatically flies to your second Mac and
 appears on the same shelf there — so files effectively "drag and drop"
 between machines, even on different networks.
 
+**Works great on a single Mac too**: use it as a drop shelf for things you'll
+need in a minute — no second machine or Tailscale required.
+
 ## How it works
 
 Drag-and-drop on macOS is a single-machine mechanism: you can't drag a file
