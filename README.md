@@ -1,7 +1,5 @@
 # Chelka
 
-<p align="center"><img src="Resources/AppIcon-1024.png" width="128" alt="Chelka icon"></p>
-
 **A file shelf in your MacBook's notch — with optional sync to a second Mac over Tailscale.**
 
 Русская версия: [README.ru.md](README.ru.md)
