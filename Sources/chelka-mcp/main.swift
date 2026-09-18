@@ -77,12 +77,8 @@ let toolDefinitions: [[String: Any]] = [
     ],
     [
         "name": "shelf_clear",
-        "description": "Очистить полку Chelka: убрать все файлы в Корзину (восстановимо). peer=true — очистить и полку второй машины (тоже в её Корзину).",
-        "inputSchema": [
-            "type": "object",
-            "properties": ["peer": ["type": "boolean", "description": "Очистить и полку пира (по умолчанию false)"]],
-            "required": [String](),
-        ],
+        "description": "Очистить полку Chelka целиком: все файлы в Корзину (восстановимо) — и локально, и на второй машине, если настроен peerHost.",
+        "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
     ],
 ]
 
@@ -209,11 +205,12 @@ func clearShelf(_ args: [String: Any]) -> (String, Bool) {
         isError = true
     }
 
-    if (args["peer"] as? Bool) == true {
-        guard let peerRaw = UserDefaults(suiteName: "dev.mike.Chelka")?.string(forKey: "peerHost"),
-              case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
-              !peer.isEmpty, PeerHost.isValid(peer) else {
-            return (report + " Полка пира не тронута: peerHost не настроен или не прошёл валидацию.", true)
+    // пира чистим всегда, если он настроен — кнопка одна и чистит всё
+    if let peerRaw = UserDefaults(suiteName: "dev.mike.Chelka")?.string(forKey: "peerHost"),
+       case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
+       !peer.isEmpty {
+        guard PeerHost.isValid(peer) else {
+            return (report + " Полка пира не тронута: peerHost не прошёл валидацию.", true)
         }
         if let err = runProcess(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
             return (report + " Очистка на \(peer) не удалась: \(err) (старая обёртка на пире?)", true)

@@ -141,16 +141,10 @@ final class ShelfView: NSView, NSDraggingSource {
             }
             menu.addItem(.separator())
         }
-        if !store.files.isEmpty {
+        if !store.files.isEmpty || transport.peerHost != nil {
             let clear = NSMenuItem(title: "Очистить полку", action: #selector(clearShelf), keyEquivalent: "")
             clear.target = self
             menu.addItem(clear)
-        }
-        if transport.peerHost != nil {
-            let clearBoth = NSMenuItem(title: "Очистить на обеих машинах",
-                                       action: #selector(clearBothShelves), keyEquivalent: "")
-            clearBoth.target = self
-            menu.addItem(clearBoth)
         }
 
         let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLoginItem), keyEquivalent: "")
@@ -198,9 +192,8 @@ final class ShelfView: NSView, NSDraggingSource {
         transport.push(url)
     }
 
-    @objc private func clearShelf() { store.clear() }
-
-    @objc private func clearBothShelves() {
+    // одна кнопка чистит всё: локально и, если настроен пир, на второй машине
+    @objc private func clearShelf() {
         store.clear()
         transport.clearPeer()
     }

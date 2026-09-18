@@ -175,8 +175,7 @@ command above to refresh it.)
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
 | Send / resend to the peer | right-click the file → "Send to the other machine" |
-| Clear the shelf | right-click the shelf background → "Очистить полку" |
-| Clear both shelves | right-click the shelf background → "Очистить на обеих машинах" |
+| Clear the shelf (both Macs) | right-click the shelf background → "Очистить полку" — clears the peer's shelf too when configured |
 | Launch at login | right-click the shelf background |
 | Quit | right-click the shelf background |
 
@@ -231,7 +230,7 @@ client) can use the shelf directly — no shell commands:
 | `shelf_grab` | copy a file from the shelf into a directory (`keep:false` = move) |
 | `shelf_put` | put a file onto the shelf; `send:true` also pushes it to the peer |
 | `shelf_remove` | move a shelf file to the Trash |
-| `shelf_clear` | clear the shelf; `peer:true` clears the second Mac's shelf too (both to Trash) |
+| `shelf_clear` | clear the shelf on both Macs (everything to each machine's Trash) |
 
 Register once after `make install`:
 
