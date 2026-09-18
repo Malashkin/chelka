@@ -13,6 +13,11 @@ final class ShelfStore {
 
     private var source: DispatchSourceFileSystemObject?
     private var reloadScheduled = false
+    /// Имена, добавленные локальным дропом (их quarantine не трогаем).
+    private var locallyAdded: Set<String> = []
+    /// Имена, виденные на полке (переживает перезапуск — файлы, прилетевшие
+    /// пока приложение не работало, будут помечены при следующем запуске).
+    private static let knownNamesKey = "knownShelfNames"
 
     init() {
         try? FileManager.default.createDirectory(at: Self.dir, withIntermediateDirectories: true)
@@ -25,6 +30,18 @@ final class ShelfStore {
             at: Self.dir,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles])) ?? []
+
+        // файлы, появившиеся не через локальный дроп, пришли извне (rsync
+        // с пира) — ставим им quarantine, rsync этого не делает
+        let current = Set(urls.map { $0.lastPathComponent })
+        let known = UserDefaults.standard.stringArray(forKey: Self.knownNamesKey).map(Set.init)
+        for url in urls where Sync.newcomers(current: current, known: known,
+                                             locallyAdded: locallyAdded).contains(url.lastPathComponent) {
+            Quarantine.markIfNeeded(url)
+        }
+        UserDefaults.standard.set(Array(current), forKey: Self.knownNamesKey)
+        locallyAdded.formIntersection(current)
+
         files = urls.sorted { mtime($0) > mtime($1) }
         onChange?()
     }
@@ -42,6 +59,7 @@ final class ShelfStore {
             if src.deletingLastPathComponent().standardizedFileURL.path == Self.dir.standardizedFileURL.path { continue }
             let name = Naming.uniqueName(src.lastPathComponent, existing: currentNames())
             let dst = Self.dir.appendingPathComponent(name)
+            locallyAdded.insert(name)
             do {
                 try fm.copyItem(at: src, to: dst)
                 added.append(dst)

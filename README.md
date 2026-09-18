@@ -132,6 +132,27 @@ machine** — files that arrived from the peer are displayed, never re-sent.
 A file dropped before `peerHost` was configured can be sent later:
 right-click it → "Send to the other machine".
 
+### 4. Lock down the transport key (recommended)
+
+By default an SSH key grants full shell access. Restrict the transport key
+so it can do exactly one thing — receive files into `~/Shelf`. On the
+**sending** machine, from the cloned repo:
+
+```bash
+scp scripts/chelka-receive.sh <peer>:.chelka-receive
+ssh <peer> 'chmod +x .chelka-receive; grep -q "restrict.*chelka-transport" .ssh/authorized_keys || sed -i "" -e "/chelka-transport/s|^ssh-ed25519|restrict,command=\"$HOME/.chelka-receive\" ssh-ed25519|" .ssh/authorized_keys'
+```
+
+Verify: shell must now be refused, transport must still work:
+
+```bash
+ssh -o BatchMode=yes <peer> 'id' || echo "shell blocked — good"
+ssh -o BatchMode=yes <peer> 'mkdir -p Shelf' && echo "transport ok"
+```
+
+(The `echo ok` test from step 2 will fail after this — that's the point.
+For a bidirectional setup, repeat on the other machine.)
+
 > **Why a dedicated key?** Default `ssh-copy-id` picks whatever key it finds,
 > and keys with non-standard filenames aren't offered by ssh at all — you end
 > up with "password works, key doesn't". A dedicated passphrase-less key plus
@@ -199,12 +220,21 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 
 ## Security model
 
-Both machines are assumed to belong to **the same person**: the transport key
-grants regular SSH access to the peer, and files arriving from it are trusted
-(no quarantine). The `peerHost` value is validated before reaching ssh/rsync
-(no option/shell injection), transfers never overwrite existing files on the
-receiver, and the app itself deletes only to the Trash. Full audit — threat
-model, findings, residual risks — lives in
+Both machines are assumed to belong to **the same person**. Defense in depth
+on top of that assumption:
+
+- `peerHost` is validated before reaching ssh/rsync — option/shell injection
+  is rejected (17 tests).
+- The transport key is locked to a forced command (setup step 4): it can only
+  receive files into `~/Shelf` — no shell, no reads, no other paths (10 tests).
+- Host keys are pinned: the app runs with `StrictHostKeyChecking=yes`; the
+  one-time pinning happens interactively at `ssh-copy-id`.
+- Received files get `com.apple.quarantine` from the receiving app, so
+  executables from the shelf go through Gatekeeper like any download.
+- Transfers never overwrite existing files on the receiver
+  (`--ignore-existing`); the app deletes only to the Trash.
+
+Full audit — threat model, findings, verification — lives in
 [docs/security/index.md](docs/security/index.md) (in Russian).
 
 ## Known limitations

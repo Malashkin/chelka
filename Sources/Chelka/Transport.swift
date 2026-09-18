@@ -64,11 +64,11 @@ final class Transport {
     // переименовывает в конце — watcher на приёмнике не увидит недокачанное
     // (скрытые файлы полка не показывает).
     private func runPush(file: URL, peer: String) -> Bool {
-        // accept-new: первый коннект на новое имя не должен падать на вопросе
-        // про host key — BatchMode спросить не может
+        // StrictHostKeyChecking=yes: host key пиннится один раз на шаге
+        // ssh-copy-id (интерактивно), дальше подмена узла = жёсткий отказ
         let sshOptsList = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
-                           "-o", "StrictHostKeyChecking=accept-new"]
-        let sshOptsLine = "/usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
+                           "-o", "StrictHostKeyChecking=yes"]
+        let sshOptsLine = "/usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=yes"
         // "--" отделяет опции от хоста; --ignore-existing не даёт перезаписать
         // на приёмнике чужой одноимённый файл (потеря данных)
         guard run("/usr/bin/ssh", sshOptsList + ["--", peer, "mkdir -p Shelf"]) else { return false }

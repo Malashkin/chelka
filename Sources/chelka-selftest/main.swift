@@ -120,6 +120,56 @@ expect(PeerHost.isValid(".host"), false, "peer: host с точки отклон�
 expect(PeerHost.isValid("host..name"), false, "peer: двойная точка отклонена")
 expect(PeerHost.isValid(String(repeating: "a", count: 400)), false, "peer: сверхдлинное отклонено")
 
+// MARK: - Карантин: помечать только прилетевшее извне, не локальные дропы
+
+expect(Sync.newcomers(current: ["a", "b"], known: ["a"], locallyAdded: []), ["b"],
+       "sync: новый файл извне — новичок")
+expect(Sync.newcomers(current: ["a", "b"], known: ["a"], locallyAdded: ["b"]), [],
+       "sync: локальный дроп — не новичок")
+expect(Sync.newcomers(current: ["a"], known: nil, locallyAdded: []), [],
+       "sync: первый скан без состояния — никого не метим")
+expect(Sync.newcomers(current: ["a"], known: ["a", "b"], locallyAdded: []), [],
+       "sync: удаление файла новичков не создаёт")
+
+// MARK: - Обёртка chelka-receive.sh: транспортный ключ не должен уметь ничего,
+// кроме приёма файлов в ~/Shelf
+
+func receive(_ sshCommand: String?) -> (code: Int32, out: String) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/bin/sh")
+    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/chelka-receive.sh"]
+    var env = ProcessInfo.processInfo.environment
+    env["CHELKA_RECEIVE_TEST"] = "1"
+    env["SSH_ORIGINAL_COMMAND"] = sshCommand
+    p.environment = env
+    let pipe = Pipe()
+    p.standardOutput = pipe
+    p.standardError = FileHandle.nullDevice
+    try! p.run()
+    let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    p.waitUntilExit()
+    return (p.terminationStatus, out)
+}
+
+let serverCmd = "rsync --server -logDtpre.iLsfxCIvu --ignore-existing . Shelf/"
+expect(receive(serverCmd).code, 0, "receive: приём rsync в Shelf/ разрешён")
+expect(receive(serverCmd).out.hasPrefix("WOULD-RUN: rsync --server"), true,
+       "receive: исполняется именно rsync --server")
+expect(receive("mkdir -p Shelf").code, 0, "receive: mkdir Shelf разрешён")
+
+expect(receive(nil).code, 1, "receive: интерактивный shell отклонён")
+expect(receive("id").code, 1, "receive: произвольная команда отклонена")
+expect(receive("rsync --server --sender -logDtpre. . Shelf/").code, 1,
+       "receive: чтение файлов (--sender) отклонено")
+expect(receive("rsync --server -logDtpre. . Documents/").code, 1,
+       "receive: запись мимо Shelf/ отклонена")
+expect(receive("rsync --server -logDtpre. . Shelf/; id").code, 1,
+       "receive: точка с запятой отклонена")
+expect(receive("rsync --server -logDtpre. . Shelf/ && id").code, 1,
+       "receive: && отклонено")
+expect(receive("bash -c 'rsync --server . Shelf/'").code, 1,
+       "receive: обёртка в bash отклонена")
+
 // MARK: - итог
 
 if failures > 0 {
