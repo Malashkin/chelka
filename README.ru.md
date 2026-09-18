@@ -261,6 +261,10 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 - Полка без скролла — видно столько файлов, сколько влезает по ширине.
 - Папки передаются, но появляются на приёмнике до окончания докачки содержимого.
 
+---
+
+<p align="center"><img src="docs/promo/creative-ru.png" width="540" alt="Впечатли девушку своей чёлкой — реклама Chelka"></p>
+
 ## Лицензия
 
 [MIT](LICENSE)

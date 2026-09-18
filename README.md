@@ -293,6 +293,10 @@ Full audit — threat model, findings, verification — lives in
 - Folders transfer, but appear on the receiver before their contents finish
   copying (rsync's atomic rename covers single files only).
 
+---
+
+<p align="center"><img src="docs/promo/creative-en.png" width="540" alt="Impress your girlfriend with your notch — Chelka ad"></p>
+
 ## License
 
 [MIT](LICENSE)
