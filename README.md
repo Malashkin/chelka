@@ -1,5 +1,7 @@
 # Chelka
 
+<p align="center"><img src="Resources/AppIcon-1024.png" width="128" alt="Chelka icon"></p>
+
 **A file shelf in your MacBook's notch — with optional sync to a second Mac over Tailscale.**
 
 Русская версия: [README.ru.md](README.ru.md)
@@ -57,7 +59,7 @@ The shelf works standalone — drop files on the notch, pull them out later.
 
 ```bash
 git clone <repo-url> chelka && cd chelka
-make test      # run self-checks (35 assertions)
+make test      # run the self-checks
 make install   # build + install to /Applications + launch
 ```
 
@@ -182,21 +184,29 @@ make test     # self-checks (swift run chelka-selftest)
 make app      # assemble build/Chelka.app
 make run      # build and run from build/
 make install  # build, install to /Applications, relaunch
+make deploy   # install + push the build to a second machine (PEER=<host>)
 ```
 
 ```
 Sources/
 ├─ ChelkaCore/        # pure logic, no AppKit — covered by tests
 │  ├─ Naming.swift        # unique file names on collisions
-│  └─ ShelfGeometry.swift # panel geometry, animation progress
+│  ├─ ShelfGeometry.swift # panel geometry, animation progress
+│  ├─ PeerHost.swift      # peerHost validation (security boundary)
+│  └─ Sync.swift          # which files count as newly-arrived
 ├─ Chelka/            # the app
 │  ├─ AppDelegate.swift   # panel, screens, frame animation
 │  ├─ ShelfPanel.swift    # NSPanel above the notch
 │  ├─ ShelfView.swift     # drop target + drag source + drawing
-│  ├─ ShelfStore.swift    # ~/Shelf folder + watcher
+│  ├─ ShelfStore.swift    # ~/Shelf folder + watcher + quarantine marking
+│  ├─ Quarantine.swift    # com.apple.quarantine for arrived files
 │  ├─ ThumbnailCache.swift# QuickLook previews
 │  └─ Transport.swift     # rsync/ssh push with retries
-└─ chelka-selftest/   # executable tests (XCTest needs full Xcode)
+├─ chelka-selftest/   # all tests (XCTest needs full Xcode)
+scripts/
+├─ chelka-receive.sh  # forced-command wrapper for the transport key
+├─ make-app.sh        # .app assembly (Info.plist, .icns, codesign)
+└─ make-icon.swift    # icon from Resources/icon-art.jpg (macOS grid)
 ```
 
 More docs (mostly in Russian) live in [docs/](docs/index.md).

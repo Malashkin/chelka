@@ -1,5 +1,7 @@
 # Chelka
 
+<p align="center"><img src="Resources/AppIcon-1024.png" width="128" alt="Иконка Chelka"></p>
+
 **Полка для файлов в чёлке MacBook — с синхронизацией на второй Mac через Tailscale.**
 
 English version: [README.md](README.md)
@@ -55,7 +57,7 @@ flowchart LR
 
 ```bash
 git clone <repo-url> chelka && cd chelka
-make test      # самопроверки (35 проверок)
+make test      # самопроверки
 make install   # сборка + установка в /Applications + запуск
 ```
 
@@ -179,6 +181,7 @@ make test     # самопроверки
 make app      # собрать build/Chelka.app
 make run      # собрать и запустить из build/
 make install  # собрать, поставить в /Applications, перезапустить
+make deploy   # install + залить сборку на вторую машину (PEER=<host>)
 ```
 
 Структура исходников и остальная документация — в [README.md](README.md#development)

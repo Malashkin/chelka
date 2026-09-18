@@ -42,7 +42,7 @@ target `Sources/chelka-selftest` (plain assertions, non-zero exit on failure).
 | `Sources/Chelka/ShelfStore.swift` | `~/Shelf` folder, watcher, quarantine marking |
 | `Sources/Chelka/ThumbnailCache.swift` | QuickLook previews (async) |
 | `Sources/Chelka/Transport.swift` | rsync/ssh push, retries, delivery status |
-| `Sources/chelka-selftest/` | all tests (66 checks) |
+| `Sources/chelka-selftest/` | the whole test suite |
 | `scripts/chelka-receive.sh` | forced-command wrapper for the transport ssh key |
 | `scripts/make-icon.swift` | app icon from `Resources/icon-art.jpg` (macOS grid: 824×824 body on 1024 canvas) |
 
