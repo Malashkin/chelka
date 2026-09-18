@@ -6,6 +6,8 @@
 
 Русская версия: [README.ru.md](README.ru.md)
 
+<p align="center"><img src="docs/promo/creative-en.png" width="600" alt="Impress your girlfriend with your notch — Chelka ad"></p>
+
 Drag a file onto the notch — it lands on a "shelf". From there, drag it out
 into Telegram, Finder, or anywhere else at any time. If a remote peer is
 configured, a copy of the file automatically flies to your second Mac and
@@ -292,10 +294,6 @@ Full audit — threat model, findings, verification — lives in
 - No scrolling: the shelf shows as many files as fit its width.
 - Folders transfer, but appear on the receiver before their contents finish
   copying (rsync's atomic rename covers single files only).
-
----
-
-<p align="center"><img src="docs/promo/creative-en.png" width="540" alt="Impress your girlfriend with your notch — Chelka ad"></p>
 
 ## License
 
