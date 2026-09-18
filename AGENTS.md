@@ -90,7 +90,7 @@ UI:
 - **Repo hygiene**: no personal data in tracked files — no real hostnames,
   tailnet names, IPs or usernames; use `<peer>`-style placeholders in docs
   and defaults/parameters in tooling.
-- **Commits**: meaningful units, message explains what and why.
+- **Commits**: meaningful units, message explains what and why, **always in English**.
 
 ## Verifying changes
 
