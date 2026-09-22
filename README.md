@@ -35,7 +35,7 @@ flowchart LR
 
 - The shelf is a transparent panel over the notch (`NSPanel`, never steals
   focus). On screens without a notch (Mac mini, external displays) it's a
-  slim strip at the top-center, slightly below the edge (reachable by drag even inside a Screen Sharing window; offset is tunable: `defaults write dev.mike.Chelka fallbackTopOffset <pt>`).
+  slim strip at the top-center, right below the menu bar (reachable by drag even inside a Screen Sharing window; offset is tunable: `defaults write dev.mike.Chelka fallbackTopOffset <pt>`).
 - Receiving and giving away drags is always local, so it works natively.
 - Transfer to the peer: `rsync` over `ssh` using the Tailscale hostname.
   Tailscale provides encryption and authentication; rsync resumes big files.
@@ -267,7 +267,7 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 | Peer hostname doesn't resolve | MagicDNS disabled in your tailnet — use the peer's `100.x.x.x` Tailscale IP as `peerHost` |
 | Network fixed, file still not sent | the app stops after 5 retries: right-click → resend |
 | Gatekeeper blocks the app on the second Mac | the .app was moved via AirDrop (quarantine) — see note above |
-| Can't find the shelf on a Mac without a notch | look for a translucent strip at the top-center, ~40pt below the edge |
+| Can't find the shelf on a Mac without a notch | look for a translucent strip at the top-center, right below the menu bar |
 
 ## Security model
 

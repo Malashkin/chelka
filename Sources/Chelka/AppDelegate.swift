@@ -26,10 +26,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     static func collapsedRect(for s: NSScreen) -> NSRect {
-        // отступ полоски от кромки на экранах без чёлки настраивается:
+        // На экранах без чёлки полоска прижата к нижнему краю меню-бара:
+        // отступ = фактическая высота меню-бара этого экрана (frame минус
+        // visibleFrame сверху). Ручная настройка перекрывает:
         // defaults write dev.mike.Chelka fallbackTopOffset <pt>
+        let menuBarHeight = max(0, s.frame.maxY - s.visibleFrame.maxY)
         let offset = UserDefaults.standard.object(forKey: "fallbackTopOffset") == nil
-            ? ShelfGeometry.defaultFallbackTopOffset
+            ? menuBarHeight
             : CGFloat(UserDefaults.standard.double(forKey: "fallbackTopOffset"))
         return ShelfGeometry.collapsedRect(screenFrame: s.frame,
                                            notchLeftMaxX: s.auxiliaryTopLeftArea?.maxX,
