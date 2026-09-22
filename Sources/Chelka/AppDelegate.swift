@@ -26,10 +26,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     static func collapsedRect(for s: NSScreen) -> NSRect {
-        ShelfGeometry.collapsedRect(screenFrame: s.frame,
-                                    notchLeftMaxX: s.auxiliaryTopLeftArea?.maxX,
-                                    notchRightMinX: s.auxiliaryTopRightArea?.minX,
-                                    safeTop: s.safeAreaInsets.top)
+        // отступ полоски от кромки на экранах без чёлки настраивается:
+        // defaults write dev.mike.Chelka fallbackTopOffset <pt>
+        let offset = UserDefaults.standard.object(forKey: "fallbackTopOffset") == nil
+            ? ShelfGeometry.defaultFallbackTopOffset
+            : CGFloat(UserDefaults.standard.double(forKey: "fallbackTopOffset"))
+        return ShelfGeometry.collapsedRect(screenFrame: s.frame,
+                                           notchLeftMaxX: s.auxiliaryTopLeftArea?.maxX,
+                                           notchRightMinX: s.auxiliaryTopRightArea?.minX,
+                                           safeTop: s.safeAreaInsets.top,
+                                           fallbackTopOffset: offset)
     }
 
     static func expandedRect(for s: NSScreen) -> NSRect {

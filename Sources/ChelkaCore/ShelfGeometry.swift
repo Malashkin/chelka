@@ -8,8 +8,11 @@ public enum ShelfGeometry {
     public static let contentHeight: CGFloat = 92
     /// На сколько hit-зона шире чёлки с каждой стороны (чтобы попадать курсором).
     public static let hitSlop: CGFloat = 20
-    /// Полоска-fallback для экранов без чёлки.
-    public static let fallbackSize = CGSize(width: 240, height: 18)
+    /// Полоска-fallback для экранов без чёлки: крупнее и НЕ у самой кромки —
+    /// внутри окна Screen Sharing в край экрана попасть drag'ом тяжело.
+    public static let fallbackSize = CGSize(width: 280, height: 28)
+    /// Отступ полоски от верхней кромки (под меню-бар).
+    public static let defaultFallbackTopOffset: CGFloat = 40
     /// Минимальная ширина раскрытой полки.
     public static let minExpandedWidth: CGFloat = 480
 
@@ -20,7 +23,8 @@ public enum ShelfGeometry {
     public static func collapsedRect(screenFrame: CGRect,
                                      notchLeftMaxX: CGFloat?,
                                      notchRightMinX: CGFloat?,
-                                     safeTop: CGFloat) -> CGRect {
+                                     safeTop: CGFloat,
+                                     fallbackTopOffset: CGFloat = defaultFallbackTopOffset) -> CGRect {
         if let l = notchLeftMaxX, let r = notchRightMinX, safeTop > 0 {
             return CGRect(x: l - hitSlop,
                           y: screenFrame.maxY - safeTop,
@@ -28,17 +32,19 @@ public enum ShelfGeometry {
                           height: safeTop)
         }
         return CGRect(x: (screenFrame.midX - fallbackSize.width / 2).rounded(),
-                      y: screenFrame.maxY - fallbackSize.height,
+                      y: screenFrame.maxY - fallbackTopOffset - fallbackSize.height,
                       width: fallbackSize.width,
                       height: fallbackSize.height)
     }
 
-    /// Раскрытое состояние: шире свернутого, контент — под чёлкой.
+    /// Раскрытое состояние: шире свернутого, контент — под чёлкой/полоской.
+    /// Якорь — верх свернутого состояния (на экране без чёлки полоска ниже
+    /// кромки, и полка раскрывается от неё, а не от края экрана).
     public static func expandedRect(screenFrame: CGRect, collapsed: CGRect) -> CGRect {
         let w = max(collapsed.width + 180, minExpandedWidth)
         let h = collapsed.height + contentHeight
         return CGRect(x: (screenFrame.midX - w / 2).rounded(),
-                      y: screenFrame.maxY - h,
+                      y: collapsed.maxY - h,
                       width: w,
                       height: h)
     }

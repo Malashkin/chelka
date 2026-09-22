@@ -44,12 +44,20 @@ expectNear(notch.width, (816 - 624) + ShelfGeometry.hitSlop * 2, "geometry: hit-
 expectNear(notch.height, 32, "geometry: высота = высоте чёлки")
 expectNear(notch.maxY, screen.maxY, "geometry: панель прижата к верхней кромке")
 
-// Экран без чёлки (Mac mini): полоска fallback по центру.
+// Экран без чёлки (Mac mini): полоска fallback по центру, НИЖЕ кромки —
+// в край экрана внутри окна Screen Sharing попасть drag'ом тяжело.
 let plain = ShelfGeometry.collapsedRect(screenFrame: screen,
                                         notchLeftMaxX: nil, notchRightMinX: nil, safeTop: 0)
 expectNear(plain.width, ShelfGeometry.fallbackSize.width, "geometry: fallback-ширина")
 expectNear(plain.midX, screen.midX, "geometry: fallback по центру")
-expectNear(plain.maxY, screen.maxY, "geometry: fallback у верхней кромки")
+expectNear(plain.maxY, screen.maxY - ShelfGeometry.defaultFallbackTopOffset,
+           "geometry: fallback ниже кромки на отступ по умолчанию")
+let atEdge = ShelfGeometry.collapsedRect(screenFrame: screen,
+                                         notchLeftMaxX: nil, notchRightMinX: nil,
+                                         safeTop: 0, fallbackTopOffset: 0)
+expectNear(atEdge.maxY, screen.maxY, "geometry: отступ 0 — полоска у кромки")
+let plainExpanded = ShelfGeometry.expandedRect(screenFrame: screen, collapsed: plain)
+expectNear(plainExpanded.maxY, plain.maxY, "geometry: полка раскрывается от полоски, не от кромки")
 
 // safeTop == 0 при наличии краёв выреза — тоже fallback (внешний монитор).
 let weird = ShelfGeometry.collapsedRect(screenFrame: screen,

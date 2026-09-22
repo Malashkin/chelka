@@ -214,8 +214,8 @@ final class ShelfView: NSView, NSDraggingSource {
         let progress = expandProgress
         guard progress > 0.02 else {
             if !hasNotch {
-                let pill = NSBezierPath(roundedRect: bounds.insetBy(dx: 60, dy: 4), xRadius: 6, yRadius: 6)
-                NSColor.black.withAlphaComponent(0.25).setFill()
+                let pill = NSBezierPath(roundedRect: bounds.insetBy(dx: 60, dy: 5), xRadius: 9, yRadius: 9)
+                NSColor.black.withAlphaComponent(0.35).setFill()
                 pill.fill()
             }
             return
