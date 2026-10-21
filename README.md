@@ -264,10 +264,40 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 |---|---|
 | 🔴 dot, log says `Permission denied (publickey,...)` | the key isn't being offered — verify `ssh -o BatchMode=yes <peer> 'echo ok'`; see "Why a dedicated key" |
 | No dots on icons at all | `peerHost` not set: `defaults read dev.mike.Chelka peerHost` |
-| Peer hostname doesn't resolve | MagicDNS disabled in your tailnet — use the peer's `100.x.x.x` Tailscale IP as `peerHost` |
+| Peer hostname doesn't resolve (`Could not resolve hostname`) | MagicDNS is off in your tailnet. Pin the peer in `~/.ssh/config`: `HostName 100.x.x.x` (its Tailscale IP) **plus** `HostKeyAlias <peer>`, and leave `peerHost` as the hostname — see "MagicDNS off" below |
 | Network fixed, file still not sent | the app stops after 5 retries: right-click → resend |
 | Gatekeeper blocks the app on the second Mac | the .app was moved via AirDrop (quarantine) — see note above |
 | Can't find the shelf on a Mac without a notch | look for a translucent strip at the top-center, right below the menu bar |
+
+### MagicDNS off
+
+Transport resolves `peerHost` through the system resolver, so turning off
+"Use Tailscale DNS" (MagicDNS) breaks sync with `Could not resolve hostname`
+while the tunnel itself is still up (`tailscale status` shows the peer active,
+and its `100.x.x.x` IP pings).
+
+Do **not** just swap `peerHost` for the IP: the host key was pinned under the
+hostname at `ssh-copy-id` time, and `StrictHostKeyChecking=yes` (a security
+invariant, never relaxed) then fails with
+`No ED25519 host key is known for 100.x.x.x`.
+
+Pin the IP in `~/.ssh/config` instead and keep the name for host-key lookup:
+
+```ssh-config
+Host <peer> <peer>.<tailnet>.ts.net 100.x.x.x
+  HostName 100.x.x.x        # bypass DNS
+  HostKeyAlias <peer>       # still verify against the pinned key
+  User <user>
+  IdentityFile ~/.ssh/id_chelka
+  IdentitiesOnly yes
+```
+
+Tailnet IPs are stable per node, so this survives reboots; re-enabling MagicDNS
+needs no further change. Get the IP from `tailscale status`. Verify with:
+
+```bash
+ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=yes -- <peer> 'mkdir -p Shelf'
+```
 
 ## Security model
 
