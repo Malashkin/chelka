@@ -1,6 +1,6 @@
 ---
 audience: все
-updated: 2026-09-18
+updated: 2026-10-21
 ---
 
 # Changelog
@@ -17,6 +17,11 @@ updated: 2026-09-18
   (defaults fallbackTopOffset).
 
 ### Fixed
+- Документация траблшутинга при выключенном MagicDNS: прежний совет «поставить
+  `100.x.x.x` в peerHost» не работал — host key запинен на имя пира, и
+  `StrictHostKeyChecking=yes` падал с `No ED25519 host key is known`. Правильный
+  рецепт (`HostName` + `HostKeyAlias` в `~/.ssh/config`, peerHost остаётся
+  именем) описан в обоих README; код транспорта не менялся.
 - Мигание полки на MacBook при курсоре у верхней кромки экрана: у границы
   `NSEvent.mouseLocation.y == maxY`, а `NSRect.contains` верхнюю границу не
   включает — проверка «курсор внутри окна» ложно сворачивала полку, AppKit

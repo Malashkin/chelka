@@ -238,6 +238,37 @@ log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact
 
 Таблица «симптом → лечение» — в [английском README](README.md#troubleshooting).
 
+### MagicDNS выключен
+
+Транспорт резолвит `peerHost` системным резолвером, поэтому выключенный
+«Use Tailscale DNS» (MagicDNS) ломает синхронизацию (`Could not resolve
+hostname`) при живом туннеле: `tailscale status` показывает пира активным, и
+его адрес `100.x.x.x` пингуется.
+
+Просто подменить `peerHost` на IP **нельзя**: host key запинен на имя (в момент
+`ssh-copy-id`), и `StrictHostKeyChecking=yes` — инвариант безопасности, его не
+ослабляем — выдаст `No ED25519 host key is known for 100.x.x.x`.
+
+Вместо этого IP прописывается в `~/.ssh/config`, а имя остаётся для сверки
+ключа:
+
+```ssh-config
+Host <peer> <peer>.<tailnet>.ts.net 100.x.x.x
+  HostName 100.x.x.x        # минуем DNS
+  HostKeyAlias <peer>       # сверяем по запиненному ключу
+  User <user>
+  IdentityFile ~/.ssh/id_chelka
+  IdentitiesOnly yes
+```
+
+Tailnet-адреса закреплены за узлом, так что правка переживает перезагрузку, а
+при обратном включении MagicDNS ничего менять не нужно. IP — из `tailscale
+status`. Проверка:
+
+```bash
+ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=yes -- <peer> 'mkdir -p Shelf'
+```
+
 ## Модель безопасности
 
 Предполагается, что обе машины принадлежат **одному человеку**. Поверх этого
