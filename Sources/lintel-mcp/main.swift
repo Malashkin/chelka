@@ -1,4 +1,4 @@
-// MCP-сервер Chelka: полка (~/Shelf) как инструменты для ИИ-агентов
+// MCP-сервер Lintel: полка (~/Shelf) как инструменты для ИИ-агентов
 // (Claude Code, Codex и любой другой MCP-клиент). JSON-RPC 2.0 поверх stdio,
 // сообщения разделены переводом строки; внешних зависимостей нет.
 //
@@ -8,7 +8,7 @@
 //   shelf_put     — положить файл на полку; send=true — и отправить на пира
 //   shelf_remove  — убрать файл с полки (в Корзину)
 import Foundation
-import ChelkaCore
+import LintelCore
 
 let shelfDir = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent("Shelf", isDirectory: true)
@@ -38,12 +38,12 @@ func replyText(_ id: Any, _ text: String, isError: Bool = false) {
 let toolDefinitions: [[String: Any]] = [
     [
         "name": "shelf_list",
-        "description": "Список файлов на полке Chelka (~/Shelf): имя, размер, дата изменения.",
+        "description": "Список файлов на полке Lintel (~/Shelf): имя, размер, дата изменения.",
         "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
     ],
     [
         "name": "shelf_grab",
-        "description": "Забрать файл с полки Chelka: копирует ~/Shelf/<name> в каталог dest (по умолчанию текущий каталог). keep=false — после копирования убрать файл с полки в Корзину.",
+        "description": "Забрать файл с полки Lintel: копирует ~/Shelf/<name> в каталог dest (по умолчанию текущий каталог). keep=false — после копирования убрать файл с полки в Корзину.",
         "inputSchema": [
             "type": "object",
             "properties": [
@@ -56,7 +56,7 @@ let toolDefinitions: [[String: Any]] = [
     ],
     [
         "name": "shelf_put",
-        "description": "Положить файл на полку Chelka этой машины. send=true — дополнительно отправить на вторую машину (peerHost из настроек Chelka), как это делает само приложение.",
+        "description": "Положить файл на полку Lintel этой машины. send=true — дополнительно отправить на вторую машину (peerHost из настроек Lintel), как это делает само приложение.",
         "inputSchema": [
             "type": "object",
             "properties": [
@@ -68,7 +68,7 @@ let toolDefinitions: [[String: Any]] = [
     ],
     [
         "name": "shelf_remove",
-        "description": "Убрать файл с полки Chelka в Корзину.",
+        "description": "Убрать файл с полки Lintel в Корзину.",
         "inputSchema": [
             "type": "object",
             "properties": ["name": ["type": "string", "description": "Имя файла на полке"]],
@@ -77,7 +77,7 @@ let toolDefinitions: [[String: Any]] = [
     ],
     [
         "name": "shelf_clear",
-        "description": "Очистить полку Chelka целиком: все файлы в Корзину (восстановимо) — и локально, и на второй машине, если настроен peerHost.",
+        "description": "Очистить полку Lintel целиком: все файлы в Корзину (восстановимо) — и локально, и на второй машине, если настроен peerHost.",
         "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
     ],
 ]
@@ -148,7 +148,7 @@ func put(_ args: [String: Any]) -> (String, Bool) {
         guard (args["send"] as? Bool) == true else {
             return ("Файл на полке этой машины: \(name). На пира не отправлялся (send=false).", false)
         }
-        guard let peerRaw = UserDefaults(suiteName: "dev.mike.Chelka")?.string(forKey: "peerHost"),
+        guard let peerRaw = Settings.string("peerHost"),
               case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
               !peer.isEmpty else {
             return ("Файл на полке (\(name)), но peerHost не настроен — отправить некуда.", true)
@@ -206,7 +206,7 @@ func clearShelf(_ args: [String: Any]) -> (String, Bool) {
     }
 
     // пира чистим всегда, если он настроен — кнопка одна и чистит всё
-    if let peerRaw = UserDefaults(suiteName: "dev.mike.Chelka")?.string(forKey: "peerHost"),
+    if let peerRaw = Settings.string("peerHost"),
        case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
        !peer.isEmpty {
         guard PeerHost.isValid(peer) else {
@@ -253,7 +253,7 @@ while let line = readLine(strippingNewline: true) {
         reply(id ?? NSNull(), result: [
             "protocolVersion": version,
             "capabilities": ["tools": [String: Any]()],
-            "serverInfo": ["name": "chelka", "version": "0.2.0"],
+            "serverInfo": ["name": "lintel", "version": "0.3.0"],
         ])
     case "notifications/initialized", "notifications/cancelled":
         continue // уведомления без ответа

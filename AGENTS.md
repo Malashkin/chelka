@@ -5,7 +5,7 @@ repository. Humans: start with [README.md](README.md) instead.
 
 ## What this project is
 
-Chelka — a macOS menu-notch file shelf (AppKit, Swift) with optional
+Lintel — a macOS menu-notch file shelf (AppKit, Swift) with optional
 folder sync to a second Mac over Tailscale (rsync/ssh, push-only).
 Architecture rationale: [docs/architecture/decisions/ADR-0001](docs/architecture/decisions/ADR-0001-notch-shelf-sync.md).
 
@@ -14,38 +14,39 @@ Architecture rationale: [docs/architecture/decisions/ADR-0001](docs/architecture
 ```bash
 make build    # debug build (swift build)
 make test     # ALL tests — run before every commit; must print «Все проверки прошли»
-make app      # assemble build/Chelka.app (icon .icns is generated here)
+make app      # assemble build/Lintel.app (icon .icns is generated here)
 make install  # build + install to /Applications + relaunch
 make deploy   # install + push the build to a second machine over ssh
 ```
 
 `make deploy` needs a peer host: `make deploy PEER=<host>` or a stored
-default (`defaults write dev.mike.Chelka deployPeer <host>`). Never hardcode
+default (`defaults write dev.mike.Lintel deployPeer <host>`). Never hardcode
 host names in the repo (see "Repo hygiene").
 
 There is **no Xcode project**: plain SwiftPM, built with Command Line Tools
 only. XCTest/Swift Testing are unavailable — tests live in the executable
-target `Sources/chelka-selftest` (plain assertions, non-zero exit on failure).
+target `Sources/lintel-selftest` (plain assertions, non-zero exit on failure).
 
 ## Code map
 
 | Path | Role |
 |---|---|
-| `Sources/ChelkaCore/` | pure logic, no AppKit — every function here must be covered in selftest |
-| `Sources/ChelkaCore/Naming.swift` | unique file names on collision |
-| `Sources/ChelkaCore/ShelfGeometry.swift` | panel geometry, animation progress |
-| `Sources/ChelkaCore/PeerHost.swift` | peerHost validation (security boundary) |
-| `Sources/ChelkaCore/Sync.swift` | which shelf files count as newly-arrived |
-| `Sources/Chelka/AppDelegate.swift` | panel lifecycle, screens, frame animation |
-| `Sources/Chelka/ShelfPanel.swift` | NSPanel above the notch (`.nonactivatingPanel`) |
-| `Sources/Chelka/ShelfView.swift` | drop target + drag source + drawing + context menu |
-| `Sources/Chelka/ShelfStore.swift` | `~/Shelf` folder, watcher, quarantine marking |
-| `Sources/Chelka/ThumbnailCache.swift` | QuickLook previews (async) |
-| `Sources/Chelka/Transport.swift` | rsync/ssh push, retries, delivery status |
-| `Sources/chelka-selftest/` | the whole test suite |
-| `Sources/chelka-mcp/` | MCP server (stdio JSON-RPC, no deps): shelf_list/grab/put/remove for agents |
-| `scripts/chelka-receive.sh` | forced-command wrapper for the transport ssh key |
-| `scripts/make-icon.swift` | app icon from `Resources/icon-art.jpg` (macOS grid: 824×824 body on 1024 canvas) |
+| `Sources/LintelCore/` | pure logic, no AppKit — every function here must be covered in selftest |
+| `Sources/LintelCore/Naming.swift` | unique file names on collision |
+| `Sources/LintelCore/ShelfGeometry.swift` | panel geometry, animation progress |
+| `Sources/LintelCore/PeerHost.swift` | peerHost validation (security boundary) |
+| `Sources/LintelCore/Sync.swift` | which shelf files count as newly-arrived |
+| `Sources/Lintel/AppDelegate.swift` | panel lifecycle, screens, frame animation |
+| `Sources/Lintel/ShelfPanel.swift` | NSPanel above the notch (`.nonactivatingPanel`) |
+| `Sources/Lintel/ShelfView.swift` | drop target + drag source + drawing + context menu |
+| `Sources/Lintel/ShelfStore.swift` | `~/Shelf` folder, watcher, quarantine marking |
+| `Sources/Lintel/ThumbnailCache.swift` | QuickLook previews (async) |
+| `Sources/Lintel/Transport.swift` | rsync/ssh push, retries, delivery status |
+| `Sources/lintel-selftest/` | the whole test suite |
+| `Sources/lintel-mcp/` | MCP server (stdio JSON-RPC, no deps): shelf_list/grab/put/remove for agents |
+| `scripts/lintel-receive.sh` | forced-command wrapper for the transport ssh key |
+| `Sources/LintelCore/Settings.swift` | settings domain + one-time migration from the old `dev.mike.Chelka` domain |
+| `scripts/make-icon.swift` | draws the app icon in code → `Resources/AppIcon-1024.png` (macOS grid: 824×824 body on 1024 canvas) |
 
 ## Invariants — do not break these
 
@@ -58,9 +59,10 @@ Security (each one is audited and tested; see [docs/security/index.md](docs/secu
    argument arrays. Do not introduce `sh -c`, string interpolation into
    commands, or `system()`.
 3. **The wrapper contract**: the transport key on a receiver may only run
-   `mkdir -p Shelf`, `chelka-clear` (Shelf contents → Trash, recoverable) and
+   `mkdir -p Shelf`, `lintel-clear` (Shelf contents → Trash, recoverable; the
+   pre-rename name `chelka-clear` is accepted too, for peers still on Chelka) and
    `rsync --server … . Shelf/` (no `--sender`). If you
-   change Transport's remote commands, update `scripts/chelka-receive.sh`
+   change Transport's remote commands, update `scripts/lintel-receive.sh`
    and its tests together, and mind setups with the old wrapper deployed.
 4. **`StrictHostKeyChecking=yes`** in transport — pinning happens at
    `ssh-copy-id` time. Do not relax to `accept-new`/`no`.
@@ -81,7 +83,7 @@ UI:
 
 ## Working rules
 
-- **Tests first-class**: new pure logic goes to `ChelkaCore` and gets selftest
+- **Tests first-class**: new pure logic goes to `LintelCore` and gets selftest
   coverage in the same commit. `make test` green before every commit.
 - **Docs ship with code**: user-visible changes update README.md **and**
   README.ru.md (they mirror each other); every change lands in
@@ -103,9 +105,9 @@ UI:
   ssh -o BatchMode=yes <peer> 'mkdir -p Shelf'
   rsync -a --ignore-existing -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes" <file> <peer>:Shelf/
   ```
-- App logs: `log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact`.
+- App logs: `log show --last 30m --predicate 'eventMessage CONTAINS "Lintel"' --style compact`.
 - MCP: the server ships inside the app bundle
-  (`/Applications/Chelka.app/Contents/MacOS/chelka-mcp`); the repo's `.mcp.json`
+  (`/Applications/Lintel.app/Contents/MacOS/lintel-mcp`); the repo's `.mcp.json`
   registers it for Claude Code in-project. Smoke test: pipe JSON-RPC lines
   (initialize → tools/list → tools/call) into the binary. shelf_put send:true
   must keep using PushPlan — same security invariants as Transport.
@@ -116,9 +118,10 @@ UI:
   `ShelfGeometry` with tests if sizes/layout change).
 - **Change transport** → `Transport.swift`; re-read invariants 1–5; update
   wrapper + its tests if remote commands change.
-- **New app icon** → replace `Resources/icon-art.jpg`, adjust the crop rect
-  in `scripts/make-icon.swift` (icon must fill the 824×824 body, no margins
-  inside it), `make install`, visually verify at small sizes.
+- **New app icon** → edit the drawing in `scripts/make-icon.swift`, run
+  `swift scripts/make-icon.swift Resources/AppIcon-1024.png` and commit the PNG
+  (icon must fill the 824×824 body, no margins inside it), `make install`,
+  visually verify at small sizes (16/32 px).
 - **Release/deploy to own machines** → `make deploy` (peer via defaults).
 
 ## Documentation map
@@ -129,7 +132,7 @@ AGENTS.md (this file)         # AI agents; CLAUDE.md points here
 docs/
 ├─ index.md                   # docs index
 ├─ CHANGELOG.md               # Keep a Changelog
-├─ architecture/decisions/    # ADRs (why the shelf is folder-sync, not cursor magic)
+├─ architecture/decisions/    # ADRs: folder-sync design (0001), rename Chelka → Lintel (0002)
 ├─ testing/index.md           # test strategy + manual checklist
 └─ security/index.md          # threat model, audit findings, verification
 ```

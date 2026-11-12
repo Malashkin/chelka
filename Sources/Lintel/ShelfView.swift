@@ -1,6 +1,6 @@
 import AppKit
 import ServiceManagement
-import ChelkaCore
+import LintelCore
 
 /// Полка: одновременно drop-target (приём файлов) и drag-source (отдача).
 final class ShelfView: NSView, NSDraggingSource {
@@ -40,7 +40,7 @@ final class ShelfView: NSView, NSDraggingSource {
     private func setExpanded(_ e: Bool, reason: StaticString = #function) {
         guard expanded != e else { return }
         expanded = e
-        NSLog("Chelka: полка -> \(e ? "раскрыта" : "свернута") (\(reason))")
+        NSLog("Lintel: полка -> \(e ? "раскрыта" : "свернута") (\(reason))")
         onExpandChange?(e)
         needsDisplay = true
     }
@@ -152,7 +152,7 @@ final class ShelfView: NSView, NSDraggingSource {
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
 
-        let quit = NSMenuItem(title: "Завершить Chelka", action: #selector(quitApp), keyEquivalent: "")
+        let quit = NSMenuItem(title: "Завершить Lintel", action: #selector(quitApp), keyEquivalent: "")
         quit.target = self
         menu.addItem(quit)
         return menu
@@ -166,7 +166,7 @@ final class ShelfView: NSView, NSDraggingSource {
                 try SMAppService.mainApp.register()
             }
         } catch {
-            NSLog("Chelka: не удалось изменить автозапуск: \(error.localizedDescription)")
+            NSLog("Lintel: не удалось изменить автозапуск: \(error.localizedDescription)")
         }
     }
 
