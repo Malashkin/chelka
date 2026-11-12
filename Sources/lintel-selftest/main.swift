@@ -1,5 +1,5 @@
 import Foundation
-import ChelkaCore
+import LintelCore
 
 // Тестовые фреймворки недоступны без полного Xcode (на машинах только CLT),
 // поэтому проверки — обычные assert'ы с exit-кодом. Запуск: make test.
@@ -139,15 +139,15 @@ expect(Sync.newcomers(current: ["a"], known: nil, locallyAdded: []), [],
 expect(Sync.newcomers(current: ["a"], known: ["a", "b"], locallyAdded: []), [],
        "sync: удаление файла новичков не создаёт")
 
-// MARK: - Обёртка chelka-receive.sh: транспортный ключ не должен уметь ничего,
+// MARK: - Обёртка lintel-receive.sh: транспортный ключ не должен уметь ничего,
 // кроме приёма файлов в ~/Shelf
 
 func receive(_ sshCommand: String?) -> (code: Int32, out: String) {
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/bin/sh")
-    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/chelka-receive.sh"]
+    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/lintel-receive.sh"]
     var env = ProcessInfo.processInfo.environment
-    env["CHELKA_RECEIVE_TEST"] = "1"
+    env["LINTEL_RECEIVE_TEST"] = "1"
     env["SSH_ORIGINAL_COMMAND"] = sshCommand
     p.environment = env
     let pipe = Pipe()
@@ -177,16 +177,19 @@ expect(receive("rsync --server -logDtpre. . Shelf/ && id").code, 1,
        "receive: && отклонено")
 expect(receive("bash -c 'rsync --server . Shelf/'").code, 1,
        "receive: обёртка в bash отклонена")
-expect(receive("chelka-clear").code, 0, "receive: команда очистки разрешена")
-expect(receive("chelka-clear").out.hasPrefix("WOULD-CLEAR"), true,
+expect(receive("lintel-clear").code, 0, "receive: команда очистки разрешена")
+expect(receive("lintel-clear").out.hasPrefix("WOULD-CLEAR"), true,
        "receive: очистка — именно ветка clear")
-expect(receive("chelka-clear; id").code, 1, "receive: clear с метасимволом отклонён")
-expect(receive("chelka-clear-all").code, 1, "receive: похожая команда отклонена")
+expect(receive("lintel-clear; id").code, 1, "receive: clear с метасимволом отклонён")
+expect(receive("lintel-clear-all").code, 1, "receive: похожая команда отклонена")
+expect(receive("chelka-clear").out.hasPrefix("WOULD-CLEAR"), true,
+       "receive: старое имя clear (пир со сборкой Chelka) принимается")
+expect(receive("chelka-clear; id").code, 1, "receive: старый clear с метасимволом отклонён")
 
 // clear в боевом режиме — на подставном HOME: файлы уезжают в Корзину
 do {
     let tmp = FileManager.default.temporaryDirectory
-        .appendingPathComponent("chelka-clear-test-\(ProcessInfo.processInfo.processIdentifier)")
+        .appendingPathComponent("lintel-clear-test-\(ProcessInfo.processInfo.processIdentifier)")
     let shelf = tmp.appendingPathComponent("Shelf")
     try FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
     try "a".write(to: shelf.appendingPathComponent("a.txt"), atomically: true, encoding: .utf8)
@@ -194,11 +197,11 @@ do {
 
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/bin/sh")
-    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/chelka-receive.sh"]
+    p.arguments = [FileManager.default.currentDirectoryPath + "/scripts/lintel-receive.sh"]
     var env = ProcessInfo.processInfo.environment
-    env["SSH_ORIGINAL_COMMAND"] = "chelka-clear"
+    env["SSH_ORIGINAL_COMMAND"] = "lintel-clear"
     env["HOME"] = tmp.path
-    env.removeValue(forKey: "CHELKA_RECEIVE_TEST")
+    env.removeValue(forKey: "LINTEL_RECEIVE_TEST")
     p.environment = env
     try p.run()
     p.waitUntilExit()
@@ -237,7 +240,7 @@ expect(Sync.expired(seen: week, now: t0.addingTimeInterval(100 * day), retention
 
 let cl = PushPlan.clearArgs(peer: "peer-host")
 expect(cl.contains("--"), true, "clear-args: '--' отделяет опции от хоста")
-expect(cl.last, "chelka-clear", "clear-args: единственная команда — chelka-clear")
+expect(cl.last, "lintel-clear", "clear-args: единственная команда — lintel-clear")
 
 // MARK: - PushPlan: инварианты транспорта зашиты в аргументы (общие для app и MCP)
 
@@ -258,6 +261,42 @@ expect(ShelfName.isSafe("a/b.txt"), false, "name: разделитель пут�
 expect(ShelfName.isSafe("../secret"), false, "name: path traversal отклонён")
 expect(ShelfName.isSafe(".ssh"), false, "name: скрытые файлы отклонены")
 expect(ShelfName.isSafe(""), false, "name: пустое отклонено")
+
+// MARK: - Settings: перенос настроек со старого имени (dev.mike.Chelka)
+
+do {
+    let pid = ProcessInfo.processInfo.processIdentifier
+    let old = "dev.mike.lintel-selftest.old-\(pid)"
+    let new = "dev.mike.lintel-selftest.new-\(pid)"
+    let d = UserDefaults.standard
+    defer { d.removePersistentDomain(forName: old); d.removePersistentDomain(forName: new) }
+
+    d.setPersistentDomain(["peerHost": "mac-old", "retentionDays": 3], forName: old)
+    d.setPersistentDomain(["peerHost": "mac-new"], forName: new)
+    expect(Settings.migrate(d, from: old, to: new), 1, "settings: перенесён только отсутствующий ключ")
+    let after = d.persistentDomain(forName: new) ?? [:]
+    expect(after["peerHost"] as? String, "mac-new", "settings: новое значение не перезаписано")
+    expect(after["retentionDays"] as? Int, 3, "settings: старый ключ перенесён")
+    expect(d.persistentDomain(forName: old)?["peerHost"] as? String, "mac-old",
+           "settings: старый домен не тронут (откат возможен)")
+
+    var cleared = after
+    cleared.removeValue(forKey: "retentionDays")
+    d.setPersistentDomain(cleared, forName: new)
+    expect(Settings.migrate(d, from: old, to: new), 0, "settings: повторный перенос не делается")
+    expect(d.persistentDomain(forName: new)?["retentionDays"] == nil, true,
+           "settings: удалённый пользователем ключ не воскресает")
+
+    d.removePersistentDomain(forName: new)
+    expect(Settings.string("peerHost", d, domains: [new, old]), "mac-old",
+           "settings: чтение падает на старый домен, если нового нет")
+    d.setPersistentDomain(["peerHost": "mac-new"], forName: new)
+    expect(Settings.string("peerHost", d, domains: [new, old]), "mac-new",
+           "settings: новый домен в приоритете")
+    d.removePersistentDomain(forName: old)
+    d.removePersistentDomain(forName: new)
+    expect(Settings.migrate(d, from: old, to: new), 0, "settings: без старого домена переносить нечего")
+}
 
 // MARK: - итог
 

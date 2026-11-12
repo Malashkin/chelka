@@ -1,8 +1,8 @@
 import AppKit
-import ChelkaCore
+import LintelCore
 
 /// Push файла на удалённую машину: rsync поверх ssh по Tailscale MagicDNS.
-/// Пир задаётся `defaults write dev.mike.Chelka peerHost <host>`; пусто — полка локальная.
+/// Пир задаётся `defaults write dev.mike.Lintel peerHost <host>`; пусто — полка локальная.
 /// Push-only: отправляем только то, что задропили на этой машине (см. ADR-0001).
 final class Transport {
     enum Status { case uploading, sent, failed }
@@ -10,7 +10,7 @@ final class Transport {
     private(set) var statuses: [String: Status] = [:]
     var onChange: (() -> Void)?
 
-    private let workQueue = DispatchQueue(label: "chelka.transport")
+    private let workQueue = DispatchQueue(label: "lintel.transport")
     private static let maxAttempts = 5
     private static let retryDelay: TimeInterval = 15
 
@@ -19,7 +19,7 @@ final class Transport {
         let trimmed = v.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }
         guard PeerHost.isValid(trimmed) else {
-            NSLog("Chelka: peerHost «\(trimmed)» отклонён валидацией (допустимы hostname/FQDN/IPv4, опционально user@)")
+            NSLog("Lintel: peerHost «\(trimmed)» отклонён валидацией (допустимы hostname/FQDN/IPv4, опционально user@)")
             return nil
         }
         return trimmed
@@ -39,7 +39,7 @@ final class Transport {
                         if statuses[file.lastPathComponent] == .sent { clear(file) }
                     }
                 } else if attempt < Self.maxAttempts {
-                    NSLog("Chelka: отправка не удалась (попытка \(attempt)), повтор через \(Int(Self.retryDelay)) с: \(file.lastPathComponent)")
+                    NSLog("Lintel: отправка не удалась (попытка \(attempt)), повтор через \(Int(Self.retryDelay)) с: \(file.lastPathComponent)")
                     DispatchQueue.main.asyncAfter(deadline: .now() + Self.retryDelay) { [self] in
                         push(file, attempt: attempt + 1)
                     }
@@ -55,9 +55,9 @@ final class Transport {
         guard let peer = peerHost else { return }
         workQueue.async { [self] in
             if run(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
-                NSLog("Chelka: полка на \(peer) очищена")
+                NSLog("Lintel: полка на \(peer) очищена")
             } else {
-                NSLog("Chelka: очистка полки на \(peer) не удалась (старая обёртка на пире? обновите ~/.chelka-receive)")
+                NSLog("Lintel: очистка полки на \(peer) не удалась (старая обёртка на пире? обновите ~/.lintel-receive)")
             }
         }
     }
@@ -89,14 +89,14 @@ final class Transport {
         p.standardOutput = FileHandle.nullDevice
         p.standardError = errPipe
         do { try p.run() } catch {
-            NSLog("Chelka: не удалось запустить \(tool): \(error.localizedDescription)")
+            NSLog("Lintel: не удалось запустить \(tool): \(error.localizedDescription)")
             return false
         }
         let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
         if p.terminationStatus != 0 {
             let msg = String(data: errData, encoding: .utf8) ?? ""
-            NSLog("Chelka: \(tool) завершился с кодом \(p.terminationStatus): \(msg)")
+            NSLog("Lintel: \(tool) завершился с кодом \(p.terminationStatus): \(msg)")
             return false
         }
         return true

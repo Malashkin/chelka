@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "chelka": {
-      "command": "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+    "lintel": {
+      "command": "/Applications/Lintel.app/Contents/MacOS/lintel-mcp"
     }
   }
 }

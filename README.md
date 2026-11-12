@@ -1,10 +1,14 @@
-# Chelka
+# Lintel
 
 **A file shelf in your MacBook's notch — with optional sync to a second Mac over Tailscale.**
 
 Русская версия: [README.ru.md](README.ru.md)
 
-<p align="center"><img src="docs/promo/creative-en.png" width="600" alt="Impress your girlfriend with your notch — Chelka ad"></p>
+<p align="center"><img src="Resources/AppIcon-1024.png" width="160" alt="Lintel icon: a shelf of files under the notch"></p>
+
+*A lintel is the beam over an opening — here, the shelf right under the
+notch. Formerly **Chelka**; upgrading an existing install is covered in
+[Upgrading from Chelka](#upgrading-from-chelka).*
 
 Drag a file onto the notch — it lands on a "shelf". From there, drag it out
 into Telegram, Finder, or anywhere else at any time. If a remote peer is
@@ -35,7 +39,7 @@ flowchart LR
 
 - The shelf is a transparent panel over the notch (`NSPanel`, never steals
   focus). On screens without a notch (Mac mini, external displays) it's a
-  slim strip at the top-center, right below the menu bar (reachable by drag even inside a Screen Sharing window; offset is tunable: `defaults write dev.mike.Chelka fallbackTopOffset <pt>`).
+  slim strip at the top-center, right below the menu bar (reachable by drag even inside a Screen Sharing window; offset is tunable: `defaults write dev.mike.Lintel fallbackTopOffset <pt>`).
 - Receiving and giving away drags is always local, so it works natively.
 - Transfer to the peer: `rsync` over `ssh` using the Tailscale hostname.
   Tailscale provides encryption and authentication; rsync resumes big files.
@@ -61,14 +65,14 @@ Design details and rejected alternatives:
 The shelf works standalone — drop files on the notch, pull them out later.
 
 ```bash
-git clone <repo-url> chelka && cd chelka
+git clone <repo-url> lintel && cd lintel
 make test      # run the self-checks
 make install   # build + install to /Applications + launch
 ```
 
 That's it. Hover the notch — the shelf slides out.
 
-- **Relaunch after quitting**: Spotlight (⌘Space) → "Chelka".
+- **Relaunch after quitting**: Spotlight (⌘Space) → "Lintel".
 - **Start at login**: right-click the expanded shelf → "Запускать при входе"
   (Launch at login).
 - **Update after pulling new code**: `make install` again.
@@ -95,17 +99,17 @@ Install the app the same way, then set up a dedicated SSH key — **without a
 passphrase** (the transport runs in `BatchMode` and can't type one):
 
 ```bash
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_chelka -C "chelka-transport"
-ssh-copy-id -i ~/.ssh/id_chelka.pub <peer>       # asks Mac 2's password once
-printf '\nHost <peer>\n  IdentityFile ~/.ssh/id_chelka\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_lintel -C "lintel-transport"
+ssh-copy-id -i ~/.ssh/id_lintel.pub <peer>       # asks Mac 2's password once
+printf '\nHost <peer>\n  IdentityFile ~/.ssh/id_lintel\n  IdentitiesOnly yes\n' >> ~/.ssh/config
 ssh -o BatchMode=yes <peer> 'echo ok'            # must print: ok
 ```
 
 Point the app at the peer and restart it:
 
 ```bash
-defaults write dev.mike.Chelka peerHost <peer>
-pkill -x Chelka; open /Applications/Chelka.app
+defaults write dev.mike.Lintel peerHost <peer>
+pkill -x Lintel; open /Applications/Lintel.app
 ```
 
 Done: files dropped on Mac 1's notch now appear on Mac 2's shelf within
@@ -123,12 +127,12 @@ and pick it up on Mac 1), mirror the same setup in the other direction:
 2. **On Mac 2** (`<mac1>` is Mac 1's Tailscale hostname):
 
    ```bash
-   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_chelka -C "chelka-transport"
-   ssh-copy-id -i ~/.ssh/id_chelka.pub <mac1>
-   printf '\nHost <mac1>\n  IdentityFile ~/.ssh/id_chelka\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_lintel -C "lintel-transport"
+   ssh-copy-id -i ~/.ssh/id_lintel.pub <mac1>
+   printf '\nHost <mac1>\n  IdentityFile ~/.ssh/id_lintel\n  IdentitiesOnly yes\n' >> ~/.ssh/config
    ssh -o BatchMode=yes <mac1> 'echo ok'          # must print: ok
-   defaults write dev.mike.Chelka peerHost <mac1>
-   pkill -x Chelka; open /Applications/Chelka.app
+   defaults write dev.mike.Lintel peerHost <mac1>
+   pkill -x Lintel; open /Applications/Lintel.app
    ```
 
 Now anything dropped on either shelf appears on both machines.
@@ -144,8 +148,8 @@ so it can do exactly one thing — receive files into `~/Shelf`. On the
 **sending** machine, from the cloned repo:
 
 ```bash
-scp scripts/chelka-receive.sh <peer>:.chelka-receive
-ssh <peer> 'chmod +x .chelka-receive; grep -q "restrict.*chelka-transport" .ssh/authorized_keys || sed -i "" -e "/chelka-transport/s|^ssh-ed25519|restrict,command=\"$HOME/.chelka-receive\" ssh-ed25519|" .ssh/authorized_keys'
+scp scripts/lintel-receive.sh <peer>:.lintel-receive
+ssh <peer> 'chmod +x .lintel-receive; grep -q "restrict.*lintel-transport" .ssh/authorized_keys || sed -i "" -e "/lintel-transport/s|^ssh-ed25519|restrict,command=\"$HOME/.lintel-receive\" ssh-ed25519|" .ssh/authorized_keys'
 ```
 
 Verify: shell must now be refused, transport must still work:
@@ -167,7 +171,7 @@ command above to refresh it.)
 
 > **Copying the built .app to another Mac?** Use `rsync`/`scp`. AirDrop sets
 > the quarantine flag and Gatekeeper will block the ad-hoc signature
-> (fixable with `xattr -dr com.apple.quarantine /Applications/Chelka.app`).
+> (fixable with `xattr -dr com.apple.quarantine /Applications/Lintel.app`).
 
 ## Usage
 
@@ -185,14 +189,14 @@ command above to refresh it.)
 **Auto-cleanup**: files that have been on the shelf longer than 7 days are
 moved to the Trash automatically (age is counted from when the file appeared
 on the shelf, not from its mtime). Tune or disable:
-`defaults write dev.mike.Chelka retentionDays <N>` (0 disables).
+`defaults write dev.mike.Lintel retentionDays <N>` (0 disables).
 
 ## Development
 
 ```bash
 make build    # debug build (swift build)
-make test     # self-checks (swift run chelka-selftest)
-make app      # assemble build/Chelka.app
+make test     # self-checks (swift run lintel-selftest)
+make app      # assemble build/Lintel.app
 make run      # build and run from build/
 make install  # build, install to /Applications, relaunch
 make deploy   # install + push the build to a second machine (PEER=<host>)
@@ -200,12 +204,12 @@ make deploy   # install + push the build to a second machine (PEER=<host>)
 
 ```
 Sources/
-├─ ChelkaCore/        # pure logic, no AppKit — covered by tests
+├─ LintelCore/        # pure logic, no AppKit — covered by tests
 │  ├─ Naming.swift        # unique file names on collisions
 │  ├─ ShelfGeometry.swift # panel geometry, animation progress
 │  ├─ PeerHost.swift      # peerHost validation (security boundary)
 │  └─ Sync.swift          # which files count as newly-arrived
-├─ Chelka/            # the app
+├─ Lintel/            # the app
 │  ├─ AppDelegate.swift   # panel, screens, frame animation
 │  ├─ ShelfPanel.swift    # NSPanel above the notch
 │  ├─ ShelfView.swift     # drop target + drag source + drawing
@@ -213,11 +217,11 @@ Sources/
 │  ├─ Quarantine.swift    # com.apple.quarantine for arrived files
 │  ├─ ThumbnailCache.swift# QuickLook previews
 │  └─ Transport.swift     # rsync/ssh push with retries
-├─ chelka-selftest/   # all tests (XCTest needs full Xcode)
+├─ lintel-selftest/   # all tests (XCTest needs full Xcode)
 scripts/
-├─ chelka-receive.sh  # forced-command wrapper for the transport key
+├─ lintel-receive.sh  # forced-command wrapper for the transport key
 ├─ make-app.sh        # .app assembly (Info.plist, .icns, codesign)
-└─ make-icon.swift    # icon from Resources/icon-art.jpg (macOS grid)
+└─ make-icon.swift    # draws the app icon in code (macOS grid)
 ```
 
 More docs (mostly in Russian) live in [docs/](docs/index.md).
@@ -239,31 +243,54 @@ Register once after `make install`:
 
 ```bash
 # Claude Code (inside this repo, .mcp.json does it automatically)
-claude mcp add chelka /Applications/Chelka.app/Contents/MacOS/chelka-mcp -s user
+claude mcp add lintel /Applications/Lintel.app/Contents/MacOS/lintel-mcp -s user
 ```
 
 ```toml
 # Codex (~/.codex/config.toml)
-[mcp_servers.chelka]
-command = "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+[mcp_servers.lintel]
+command = "/Applications/Lintel.app/Contents/MacOS/lintel-mcp"
 ```
 
 `shelf_put` with `send:true` uses the same hardened transport as the app
 (peerHost validation, BatchMode, pinned host keys, `--ignore-existing`);
 file names are validated against path traversal.
 
+## Upgrading from Chelka
+
+The app was renamed from Chelka to Lintel (bundle ID `dev.mike.Chelka` →
+`dev.mike.Lintel`). `make install` / `make deploy` remove the old
+`Chelka.app`. What carries over and what needs a hand:
+
+- **Settings** (`peerHost`, `retentionDays`, `fallbackTopOffset`,
+  `deployPeer`) are copied from `dev.mike.Chelka` on first launch — nothing to
+  do. The old domain is left in place, so rolling back still works.
+- **Launch at login** is tied to the app bundle: turn it on again from the
+  shelf's context menu.
+- **MCP**: re-register the server under the new path —
+  `claude mcp remove chelka -s user; claude mcp add lintel /Applications/Lintel.app/Contents/MacOS/lintel-mcp -s user`.
+- **Transport key and wrapper on the peer keep working as is** (`~/.ssh/id_chelka`,
+  `~/.chelka-receive` are just file names). The one thing that changes is the
+  "clear both shelves" command: Lintel sends `lintel-clear`, which the *old*
+  wrapper rejects. Refresh the wrapper on each receiver — the new one accepts
+  both names, so a Mac that still runs Chelka keeps working too:
+
+  ```bash
+  scp scripts/lintel-receive.sh <peer>:.chelka-receive   # keep the path authorized_keys points to
+  ```
+
 ## Troubleshooting
 
 App logs:
 
 ```bash
-log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact | tail -20
+log show --last 30m --predicate 'eventMessage CONTAINS "Lintel"' --style compact | tail -20
 ```
 
 | Symptom | Cause / fix |
 |---|---|
 | 🔴 dot, log says `Permission denied (publickey,...)` | the key isn't being offered — verify `ssh -o BatchMode=yes <peer> 'echo ok'`; see "Why a dedicated key" |
-| No dots on icons at all | `peerHost` not set: `defaults read dev.mike.Chelka peerHost` |
+| No dots on icons at all | `peerHost` not set: `defaults read dev.mike.Lintel peerHost` |
 | Peer hostname doesn't resolve | MagicDNS disabled in your tailnet — use the peer's `100.x.x.x` Tailscale IP as `peerHost` |
 | Network fixed, file still not sent | the app stops after 5 retries: right-click → resend |
 | Gatekeeper blocks the app on the second Mac | the .app was moved via AirDrop (quarantine) — see note above |

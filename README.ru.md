@@ -1,10 +1,14 @@
-# Chelka
+# Lintel
 
 **Полка для файлов в чёлке MacBook — с синхронизацией на второй Mac через Tailscale.**
 
 English version: [README.md](README.md)
 
-<p align="center"><img src="docs/promo/creative-ru.png" width="600" alt="Впечатли девушку своей чёлкой — реклама Chelka"></p>
+<p align="center"><img src="Resources/AppIcon-1024.png" width="160" alt="Иконка Lintel: полка с файлами под чёлкой"></p>
+
+*Lintel — по-английски «перемычка над проёмом»: здесь это полка прямо под
+чёлкой. Раньше приложение называлось **Chelka**; как обновить существующую
+установку — в разделе [Переход с Chelka](#переход-с-chelka).*
 
 Перетаскиваешь файл на чёлку — он ложится на «полку». Оттуда его можно в любой
 момент вытащить drag'ом в Telegram, Finder или куда угодно. Если настроен
@@ -34,7 +38,7 @@ flowchart LR
 ```
 
 - Полка — прозрачная панель поверх чёлки (`NSPanel`, не перехватывает фокус).
-  На экране без чёлки (Mac mini, внешний монитор) — полоска по центру, сразу под меню-баром (чтобы в неё можно было попасть drag'ом даже внутри окна Screen Sharing; отступ настраивается: `defaults write dev.mike.Chelka fallbackTopOffset <pt>`).
+  На экране без чёлки (Mac mini, внешний монитор) — полоска по центру, сразу под меню-баром (чтобы в неё можно было попасть drag'ом даже внутри окна Screen Sharing; отступ настраивается: `defaults write dev.mike.Lintel fallbackTopOffset <pt>`).
 - Приём и отдача drag'а всегда локальные, поэтому работают нативно.
 - Отправка на пир: `rsync` поверх `ssh` по Tailscale-имени. Шифрование и
   аутентификацию даёт Tailscale, докачку больших файлов — rsync.
@@ -59,14 +63,14 @@ flowchart LR
 Полка полноценно работает сама по себе — задропил на чёлку, вытащил когда нужно.
 
 ```bash
-git clone <repo-url> chelka && cd chelka
+git clone <repo-url> lintel && cd lintel
 make test      # самопроверки
 make install   # сборка + установка в /Applications + запуск
 ```
 
 Готово. Наведи курсор на чёлку — полка выедет.
 
-- **Перезапуск после выхода**: Spotlight (⌘Space) → «Chelka».
+- **Перезапуск после выхода**: Spotlight (⌘Space) → «Lintel».
 - **Автозапуск**: правая кнопка по раскрытой полке → «Запускать при входе».
 - **Обновление после `git pull`**: снова `make install`.
 
@@ -93,17 +97,17 @@ make install   # сборка + установка в /Applications + запус
 её не сможет):
 
 ```bash
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_chelka -C "chelka-transport"
-ssh-copy-id -i ~/.ssh/id_chelka.pub <peer>       # спросит пароль Mac 2 один раз
-printf '\nHost <peer>\n  IdentityFile ~/.ssh/id_chelka\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_lintel -C "lintel-transport"
+ssh-copy-id -i ~/.ssh/id_lintel.pub <peer>       # спросит пароль Mac 2 один раз
+printf '\nHost <peer>\n  IdentityFile ~/.ssh/id_lintel\n  IdentitiesOnly yes\n' >> ~/.ssh/config
 ssh -o BatchMode=yes <peer> 'echo ok'            # должно напечатать: ok
 ```
 
 Указать приложению пира и перезапустить:
 
 ```bash
-defaults write dev.mike.Chelka peerHost <peer>
-pkill -x Chelka; open /Applications/Chelka.app
+defaults write dev.mike.Lintel peerHost <peer>
+pkill -x Lintel; open /Applications/Lintel.app
 ```
 
 Готово: файлы с чёлки Mac 1 появляются на полке Mac 2 за секунды. Статус
@@ -120,12 +124,12 @@ pkill -x Chelka; open /Applications/Chelka.app
 2. **На Mac 2** (`<mac1>` — Tailscale-имя Mac 1):
 
    ```bash
-   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_chelka -C "chelka-transport"
-   ssh-copy-id -i ~/.ssh/id_chelka.pub <mac1>
-   printf '\nHost <mac1>\n  IdentityFile ~/.ssh/id_chelka\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_lintel -C "lintel-transport"
+   ssh-copy-id -i ~/.ssh/id_lintel.pub <mac1>
+   printf '\nHost <mac1>\n  IdentityFile ~/.ssh/id_lintel\n  IdentitiesOnly yes\n' >> ~/.ssh/config
    ssh -o BatchMode=yes <mac1> 'echo ok'          # должно напечатать: ok
-   defaults write dev.mike.Chelka peerHost <mac1>
-   pkill -x Chelka; open /Applications/Chelka.app
+   defaults write dev.mike.Lintel peerHost <mac1>
+   pkill -x Lintel; open /Applications/Lintel.app
    ```
 
 Теперь всё, что дропнуто на любую из полок, появляется на обеих машинах.
@@ -141,8 +145,8 @@ pkill -x Chelka; open /Applications/Chelka.app
 из клонированного репозитория:
 
 ```bash
-scp scripts/chelka-receive.sh <peer>:.chelka-receive
-ssh <peer> 'chmod +x .chelka-receive; grep -q "restrict.*chelka-transport" .ssh/authorized_keys || sed -i "" -e "/chelka-transport/s|^ssh-ed25519|restrict,command=\"$HOME/.chelka-receive\" ssh-ed25519|" .ssh/authorized_keys'
+scp scripts/lintel-receive.sh <peer>:.lintel-receive
+ssh <peer> 'chmod +x .lintel-receive; grep -q "restrict.*lintel-transport" .ssh/authorized_keys || sed -i "" -e "/lintel-transport/s|^ssh-ed25519|restrict,command=\"$HOME/.lintel-receive\" ssh-ed25519|" .ssh/authorized_keys'
 ```
 
 Проверка: shell должен отклоняться, транспорт — работать:
@@ -164,7 +168,7 @@ ssh -o BatchMode=yes <peer> 'mkdir -p Shelf' && echo "транспорт раб�
 
 > **Переносите собранный .app на другой Mac?** Только `rsync`/`scp`: AirDrop
 > ставит карантин, и Gatekeeper заблокирует ad-hoc подпись (лечится
-> `xattr -dr com.apple.quarantine /Applications/Chelka.app`).
+> `xattr -dr com.apple.quarantine /Applications/Lintel.app`).
 
 ## Использование
 
@@ -177,11 +181,11 @@ ssh -o BatchMode=yes <peer> 'mkdir -p Shelf' && echo "транспорт раб�
 | Отправить/дослать на пира | правая кнопка по файлу → «Отправить на вторую машину» |
 | Очистить полку (обе машины) | правая кнопка по фону полки → «Очистить полку» — чистит и полку пира, если он настроен |
 | Автозапуск | правая кнопка по фону полки → «Запускать при входе» |
-| Выйти | правая кнопка по фону полки → «Завершить Chelka» |
+| Выйти | правая кнопка по фону полки → «Завершить Lintel» |
 
 **Автоочистка**: файлы, пролежавшие на полке дольше 7 дней, автоматически
 уезжают в Корзину (возраст считается от появления на полке, а не по mtime).
-Настроить или выключить: `defaults write dev.mike.Chelka retentionDays <N>`
+Настроить или выключить: `defaults write dev.mike.Lintel retentionDays <N>`
 (0 — выключить).
 
 ## Разработка
@@ -189,7 +193,7 @@ ssh -o BatchMode=yes <peer> 'mkdir -p Shelf' && echo "транспорт раб�
 ```bash
 make build    # отладочная сборка
 make test     # самопроверки
-make app      # собрать build/Chelka.app
+make app      # собрать build/Lintel.app
 make run      # собрать и запустить из build/
 make install  # собрать, поставить в /Applications, перезапустить
 make deploy   # install + залить сборку на вторую машину (PEER=<host>)
@@ -215,25 +219,48 @@ MCP-клиент) работают с полкой напрямую, без shel
 
 ```bash
 # Claude Code (внутри этого репозитория .mcp.json подхватится сам)
-claude mcp add chelka /Applications/Chelka.app/Contents/MacOS/chelka-mcp -s user
+claude mcp add lintel /Applications/Lintel.app/Contents/MacOS/lintel-mcp -s user
 ```
 
 ```toml
 # Codex (~/.codex/config.toml)
-[mcp_servers.chelka]
-command = "/Applications/Chelka.app/Contents/MacOS/chelka-mcp"
+[mcp_servers.lintel]
+command = "/Applications/Lintel.app/Contents/MacOS/lintel-mcp"
 ```
 
 `shelf_put` с `send:true` использует тот же защищённый транспорт, что и
 приложение (валидация peerHost, BatchMode, запиненные host key,
 `--ignore-existing`); имена файлов проверяются от path traversal.
 
+## Переход с Chelka
+
+Приложение переименовано из Chelka в Lintel (bundle ID `dev.mike.Chelka` →
+`dev.mike.Lintel`). `make install` / `make deploy` удаляют старый
+`Chelka.app`. Что переезжает само и что руками:
+
+- **Настройки** (`peerHost`, `retentionDays`, `fallbackTopOffset`,
+  `deployPeer`) копируются из `dev.mike.Chelka` при первом запуске — делать
+  ничего не надо. Старый домен не удаляется, откат на старую сборку рабочий.
+- **Автозапуск** привязан к бандлу приложения: включите заново в
+  контекстном меню полки.
+- **MCP**: перерегистрируйте сервер по новому пути —
+  `claude mcp remove chelka -s user; claude mcp add lintel /Applications/Lintel.app/Contents/MacOS/lintel-mcp -s user`.
+- **Транспортный ключ и обёртка на пире работают как есть** (`~/.ssh/id_chelka`,
+  `~/.chelka-receive` — просто имена файлов). Меняется одно: команда
+  «очистить обе полки». Lintel шлёт `lintel-clear`, а *старая* обёртка её
+  отклоняет. Обновите обёртку на каждом приёмнике — новая принимает оба
+  имени, так что Mac, где ещё стоит Chelka, тоже продолжит работать:
+
+  ```bash
+  scp scripts/lintel-receive.sh <peer>:.chelka-receive   # путь, на который указывает authorized_keys
+  ```
+
 ## Отладка
 
 Логи приложения:
 
 ```bash
-log show --last 30m --predicate 'eventMessage CONTAINS "Chelka"' --style compact | tail -20
+log show --last 30m --predicate 'eventMessage CONTAINS "Lintel"' --style compact | tail -20
 ```
 
 Таблица «симптом → лечение» — в [английском README](README.md#troubleshooting).

@@ -1,6 +1,6 @@
 ---
 audience: все
-updated: 2026-09-18
+updated: 2026-11-12
 ---
 
 # Changelog
@@ -10,6 +10,14 @@ updated: 2026-09-18
 ## [Unreleased]
 
 ### Changed
+- **Продукт переименован: Chelka → Lintel** («перемычка над проёмом» —
+  полка под вырезом экрана). Новые бандл `Lintel.app` и bundle ID
+  `dev.mike.Lintel`, таргеты `LintelCore`/`lintel-mcp`/`lintel-selftest`,
+  обёртка `scripts/lintel-receive.sh`, команда очистки `lintel-clear`.
+  Новая иконка рисуется кодом (`scripts/make-icon.swift`) вместо фото-арта.
+  Настройки переезжают из `dev.mike.Chelka` сами при первом запуске; обёртка
+  принимает и старое имя `chelka-clear`. Ручные шаги — README, «Upgrading
+  from Chelka». Разбор: ADR-0002.
 - Полоска на экранах без чёлки увеличена (280x28) и прижата к нижнему
   краю меню-бара (отступ = его фактическая высота): внутри окна Screen
   Sharing в самый край экрана попасть drag'ом тяжело, а ниже — полоска
