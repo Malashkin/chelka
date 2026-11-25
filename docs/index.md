@@ -1,6 +1,6 @@
 ---
 audience: люди
-updated: 2026-09-18
+updated: 2026-11-12
 ---
 
 # Документация проекта
@@ -17,6 +17,8 @@ updated: 2026-09-18
 
 - [CHANGELOG.md](CHANGELOG.md) — история изменений (Keep a Changelog).
 - [architecture/decisions/](architecture/decisions/ADR-0001-notch-shelf-sync.md) —
-  ADR: почему полка — это синхронизация папки, а не «drag сквозь Screen Sharing».
+  ADR: почему полка — это синхронизация папки, а не «drag сквозь Screen Sharing»;
+  [ADR-0002](architecture/decisions/ADR-0002-rename-to-lintel.md) — переименование
+  Chelka → Lintel и миграция существующих установок.
 - [testing/](testing/index.md) — стратегия тестов и ручной чек-лист.
 - [security/](security/index.md) — аудит: модель угроз, находки (все устранены), проверки.

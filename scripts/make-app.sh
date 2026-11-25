@@ -1,17 +1,17 @@
 #!/bin/bash
-# Собирает Chelka.app из SPM-бинаря (LSUIElement — без иконки в доке).
+# Собирает Lintel.app из SPM-бинаря (LSUIElement — без иконки в доке).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 swift build -c release
 
-APP=build/Chelka.app
+APP=build/Lintel.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/Chelka "$APP/Contents/MacOS/Chelka"
-cp .build/release/chelka-mcp "$APP/Contents/MacOS/chelka-mcp"
+cp .build/release/Lintel "$APP/Contents/MacOS/Lintel"
+cp .build/release/lintel-mcp "$APP/Contents/MacOS/lintel-mcp"
 
-# Иконка: лоб с чёлкой на фоне ковра (Resources/AppIcon-1024.png -> .icns)
+# Иконка рисуется scripts/make-icon.swift (Resources/AppIcon-1024.png -> .icns)
 ICONSET=build/AppIcon.iconset
 rm -rf "$ICONSET"
 mkdir -p "$ICONSET"
@@ -27,10 +27,10 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>Chelka</string>
-    <key>CFBundleDisplayName</key><string>Chelka</string>
-    <key>CFBundleIdentifier</key><string>dev.mike.Chelka</string>
-    <key>CFBundleExecutable</key><string>Chelka</string>
+    <key>CFBundleName</key><string>Lintel</string>
+    <key>CFBundleDisplayName</key><string>Lintel</string>
+    <key>CFBundleIdentifier</key><string>dev.mike.Lintel</string>
+    <key>CFBundleExecutable</key><string>Lintel</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleVersion</key><string>1</string>

@@ -12,13 +12,13 @@ enum Quarantine {
         }
         var values = URLResourceValues()
         values.quarantineProperties = [
-            kLSQuarantineAgentNameKey as String: "Chelka",
+            kLSQuarantineAgentNameKey as String: "Lintel",
             kLSQuarantineTypeKey as String: kLSQuarantineTypeOtherDownload as String,
         ]
         do {
             try u.setResourceValues(values)
         } catch {
-            NSLog("Chelka: не удалось поставить quarantine на \(url.lastPathComponent): \(error.localizedDescription)")
+            NSLog("Lintel: не удалось поставить quarantine на \(url.lastPathComponent): \(error.localizedDescription)")
         }
     }
 }

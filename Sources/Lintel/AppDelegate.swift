@@ -1,6 +1,6 @@
 import AppKit
 import QuartzCore
-import ChelkaCore
+import LintelCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: ShelfPanel?
@@ -14,9 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self, selector: #selector(screensChanged),
             name: NSApplication.didChangeScreenParametersNotification, object: nil)
         if let peer = transport.peerHost {
-            NSLog("Chelka: пир для отправки — \(peer)")
+            NSLog("Lintel: пир для отправки — \(peer)")
         } else {
-            NSLog("Chelka: peerHost не задан, полка работает только локально")
+            NSLog("Lintel: peerHost не задан, полка работает только локально")
         }
     }
 
@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // На экранах без чёлки полоска прижата к нижнему краю меню-бара:
         // отступ = фактическая высота меню-бара этого экрана (frame минус
         // visibleFrame сверху). Ручная настройка перекрывает:
-        // defaults write dev.mike.Chelka fallbackTopOffset <pt>
+        // defaults write dev.mike.Lintel fallbackTopOffset <pt>
         let menuBarHeight = max(0, s.frame.maxY - s.visibleFrame.maxY)
         let offset = UserDefaults.standard.object(forKey: "fallbackTopOffset") == nil
             ? menuBarHeight

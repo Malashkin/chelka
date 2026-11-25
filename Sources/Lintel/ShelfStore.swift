@@ -1,5 +1,5 @@
 import AppKit
-import ChelkaCore
+import LintelCore
 
 /// Модель полки: папка ~/Shelf. Полка отображает её содержимое,
 /// watcher ловит файлы, прилетевшие извне (rsync с другой машины).
@@ -21,7 +21,7 @@ final class ShelfStore {
     /// перезапуск: и карантин, и автоочистка работают по этой памяти.
     private static let seenDatesKey = "shelfSeenDates"
     /// Автоочистка: файлы старше N суток на полке уезжают в Корзину.
-    /// defaults write dev.mike.Chelka retentionDays N (0 — выключить).
+    /// defaults write dev.mike.Lintel retentionDays N (0 — выключить).
     private static var retentionDays: Int {
         UserDefaults.standard.object(forKey: "retentionDays") == nil
             ? 7 : UserDefaults.standard.integer(forKey: "retentionDays")
@@ -74,7 +74,7 @@ final class ShelfStore {
                                                    resultingItemURL: nil)
                 seen.removeValue(forKey: name)
             }
-            NSLog("Chelka: автоочистка — \(expired.count) файл(ов) старше \(Self.retentionDays) дн. убраны в Корзину")
+            NSLog("Lintel: автоочистка — \(expired.count) файл(ов) старше \(Self.retentionDays) дн. убраны в Корзину")
             urls.removeAll { expired.contains($0.lastPathComponent) }
         }
 
@@ -104,7 +104,7 @@ final class ShelfStore {
                 try fm.copyItem(at: src, to: dst)
                 added.append(dst)
             } catch {
-                NSLog("Chelka: не удалось скопировать \(src.path): \(error.localizedDescription)")
+                NSLog("Lintel: не удалось скопировать \(src.path): \(error.localizedDescription)")
             }
         }
         reload()
@@ -131,7 +131,7 @@ final class ShelfStore {
     private func watch() {
         let fd = open(Self.dir.path, O_EVTONLY)
         guard fd >= 0 else {
-            NSLog("Chelka: не удалось открыть \(Self.dir.path) для наблюдения")
+            NSLog("Lintel: не удалось открыть \(Self.dir.path) для наблюдения")
             return
         }
         let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: .write, queue: .main)
