@@ -9,6 +9,15 @@ updated: 2026-11-25
 
 ## [Unreleased]
 
+### Changed
+- Весь интерфейс приложения на английском: меню («Remove from Shelf», «Show in
+  Finder», «Send to Other Mac» / «Send Again», «Open Shelf Folder», «Clear
+  Shelf», «Open at Login», «Quit Lintel»), подсказка «Drop files here»,
+  нижняя строка («12 files · 340 MB», «Shelf is empty», «calculating…»,
+  кнопка «Open Folder»), сообщения в системном журнале и ответы MCP-сервера
+  (описания инструментов и результаты). Русский остаётся в комментариях кода
+  и в документации (README.ru — намеренно).
+
 ### Added
 - Нижняя строка раскрытой полки: сводка «N файлов · размер» (размер
   считается в фоне, рекурсивно для папок; пока считается — «считаю…») и

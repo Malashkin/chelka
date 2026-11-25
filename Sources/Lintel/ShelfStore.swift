@@ -81,7 +81,7 @@ final class ShelfStore {
                                                    resultingItemURL: nil)
                 seen.removeValue(forKey: name)
             }
-            NSLog("Lintel: автоочистка — \(expired.count) файл(ов) старше \(Self.retentionDays) дн. убраны в Корзину")
+            NSLog("Lintel: auto-cleanup moved \(expired.count) item(s) older than \(Self.retentionDays) day(s) to the Trash")
             urls.removeAll { expired.contains($0.lastPathComponent) }
         }
 
@@ -128,7 +128,7 @@ final class ShelfStore {
                 try fm.copyItem(at: src, to: dst)
                 added.append(dst)
             } catch {
-                NSLog("Lintel: не удалось скопировать \(src.path): \(error.localizedDescription)")
+                NSLog("Lintel: failed to copy \(src.path): \(error.localizedDescription)")
             }
         }
         reload()
@@ -155,7 +155,7 @@ final class ShelfStore {
     private func watch() {
         let fd = open(Self.dir.path, O_EVTONLY)
         guard fd >= 0 else {
-            NSLog("Lintel: не удалось открыть \(Self.dir.path) для наблюдения")
+            NSLog("Lintel: failed to open \(Self.dir.path) for watching")
             return
         }
         let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: .write, queue: .main)

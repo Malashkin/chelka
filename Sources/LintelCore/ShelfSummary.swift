@@ -1,29 +1,28 @@
 import Foundation
 
-/// Сводка полки для нижней строки: «12 файлов · 340 МБ».
+/// Сводка полки для нижней строки: "12 files · 340 MB".
 /// Папка, брошенная на полку, — один элемент; её размер считается целиком.
 public enum ShelfSummary {
-    /// «файл / файла / файлов» по правилам русского числа.
+    /// "file" / "files".
     public static func filesWord(_ n: Int) -> String {
-        let n = abs(n)
-        let mod10 = n % 10, mod100 = n % 100
-        if mod10 == 1 && mod100 != 11 { return "файл" }
-        if (2...4).contains(mod10) && !(12...14).contains(mod100) { return "файла" }
-        return "файлов"
+        abs(n) == 1 ? "file" : "files"
     }
 
-    /// Размер как в Finder (десятичные единицы): «512 Б», «1,5 МБ», «340 МБ».
-    /// Меньше 10 единиц — с одним знаком после запятой, иначе целое.
+    /// Размер как в Finder (десятичные единицы): "512 bytes", "1.5 MB", "340 MB".
+    /// Меньше 10 единиц — с одним знаком после точки, иначе целое.
     public static func formatBytes(_ bytes: Int64) -> String {
-        let units = ["Б", "КБ", "МБ", "ГБ", "ТБ"]
-        guard bytes >= 1000 else { return "\(max(0, bytes)) Б" }
+        let units = ["bytes", "KB", "MB", "GB", "TB"]
+        guard bytes >= 1000 else {
+            let b = max(0, bytes)
+            return b == 1 ? "1 byte" : "\(b) bytes"
+        }
         var value = Double(bytes)
         var unit = 0
         while value >= 1000, unit < units.count - 1 {
             value /= 1000
             unit += 1
         }
-        // 999,6 КБ при округлении дало бы «1000 КБ» — переходим к следующей единице
+        // 999.6 KB при округлении дало бы «1000 КБ» — переходим к следующей единице
         if value.rounded() >= 1000, unit < units.count - 1 {
             value /= 1000
             unit += 1
@@ -32,7 +31,7 @@ public enum ShelfSummary {
             let tenths = (value * 10).rounded()
             if tenths < 100 {
                 let whole = Int(tenths) / 10, frac = Int(tenths) % 10
-                return frac == 0 ? "\(whole) \(units[unit])" : "\(whole),\(frac) \(units[unit])"
+                return frac == 0 ? "\(whole) \(units[unit])" : "\(whole).\(frac) \(units[unit])"
             }
         }
         return "\(Int(value.rounded())) \(units[unit])"
@@ -40,9 +39,9 @@ public enum ShelfSummary {
 
     /// Текст строки. `bytes == nil` — размер ещё считается.
     public static func text(count: Int, bytes: Int64?) -> String {
-        guard count > 0 else { return "Полка пуста" }
+        guard count > 0 else { return "Shelf is empty" }
         let head = "\(count) \(filesWord(count))"
-        guard let bytes else { return head + " · считаю…" }
+        guard let bytes else { return head + " · calculating…" }
         return head + " · " + formatBytes(bytes)
     }
 

@@ -18,7 +18,7 @@ enum Quarantine {
         do {
             try u.setResourceValues(values)
         } catch {
-            NSLog("Lintel: не удалось поставить quarantine на \(url.lastPathComponent): \(error.localizedDescription)")
+            NSLog("Lintel: failed to set quarantine on \(url.lastPathComponent): \(error.localizedDescription)")
         }
     }
 }

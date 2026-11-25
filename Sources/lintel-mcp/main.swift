@@ -38,46 +38,46 @@ func replyText(_ id: Any, _ text: String, isError: Bool = false) {
 let toolDefinitions: [[String: Any]] = [
     [
         "name": "shelf_list",
-        "description": "Список файлов на полке Lintel (~/Shelf): имя, размер, дата изменения.",
+        "description": "List files on the Lintel shelf (~/Shelf): name, size, modification date.",
         "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
     ],
     [
         "name": "shelf_grab",
-        "description": "Забрать файл с полки Lintel: копирует ~/Shelf/<name> в каталог dest (по умолчанию текущий каталог). keep=false — после копирования убрать файл с полки в Корзину.",
+        "description": "Take a file from the Lintel shelf: copies ~/Shelf/<name> into the dest directory (current directory by default). keep=false moves the file from the shelf to the Trash after copying.",
         "inputSchema": [
             "type": "object",
             "properties": [
-                "name": ["type": "string", "description": "Имя файла на полке (из shelf_list)"],
-                "dest": ["type": "string", "description": "Каталог назначения; по умолчанию текущий"],
-                "keep": ["type": "boolean", "description": "Оставить файл на полке (по умолчанию true)"],
+                "name": ["type": "string", "description": "File name on the shelf (from shelf_list)"],
+                "dest": ["type": "string", "description": "Destination directory; current directory by default"],
+                "keep": ["type": "boolean", "description": "Keep the file on the shelf (default true)"],
             ],
             "required": ["name"],
         ],
     ],
     [
         "name": "shelf_put",
-        "description": "Положить файл на полку Lintel этой машины. send=true — дополнительно отправить на вторую машину (peerHost из настроек Lintel), как это делает само приложение.",
+        "description": "Put a file on this Mac's Lintel shelf. send=true also sends it to the other Mac (peerHost from Lintel settings), the same way the app does.",
         "inputSchema": [
             "type": "object",
             "properties": [
-                "path": ["type": "string", "description": "Путь к файлу (абсолютный или от текущего каталога)"],
-                "send": ["type": "boolean", "description": "Отправить на пира (по умолчанию false)"],
+                "path": ["type": "string", "description": "Path to the file (absolute or relative to the current directory)"],
+                "send": ["type": "boolean", "description": "Send to the peer (default false)"],
             ],
             "required": ["path"],
         ],
     ],
     [
         "name": "shelf_remove",
-        "description": "Убрать файл с полки Lintel в Корзину.",
+        "description": "Move a file from the Lintel shelf to the Trash.",
         "inputSchema": [
             "type": "object",
-            "properties": ["name": ["type": "string", "description": "Имя файла на полке"]],
+            "properties": ["name": ["type": "string", "description": "File name on the shelf"]],
             "required": ["name"],
         ],
     ],
     [
         "name": "shelf_clear",
-        "description": "Очистить полку Lintel целиком: все файлы в Корзину (восстановимо) — и локально, и на второй машине, если настроен peerHost.",
+        "description": "Clear the whole Lintel shelf: every file goes to the Trash (recoverable), both locally and on the other Mac if peerHost is set.",
         "inputSchema": ["type": "object", "properties": [String: Any](), "required": [String]()],
     ],
 ]
@@ -88,17 +88,17 @@ func listShelf() -> String {
         at: shelfDir,
         includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey, .isDirectoryKey],
         options: [.skipsHiddenFiles])) ?? []
-    if urls.isEmpty { return "Полка пуста." }
+    if urls.isEmpty { return "The shelf is empty." }
     let df = ISO8601DateFormatter()
     let lines = urls
         .sorted { (mtime($0) ?? .distantPast) > (mtime($1) ?? .distantPast) }
         .map { url -> String in
             let rv = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey, .isDirectoryKey])
-            let size = rv?.isDirectory == true ? "папка" : "\(rv?.fileSize ?? 0) байт"
+            let size = rv?.isDirectory == true ? "folder" : "\(rv?.fileSize ?? 0) bytes"
             let date = rv?.contentModificationDate.map(df.string(from:)) ?? "?"
             return "\(url.lastPathComponent)\t\(size)\t\(date)"
         }
-    return "Файлы на полке (\(lines.count)):\n" + lines.joined(separator: "\n")
+    return "Files on the shelf (\(lines.count)):\n" + lines.joined(separator: "\n")
 }
 
 func mtime(_ url: URL) -> Date? {
@@ -107,11 +107,11 @@ func mtime(_ url: URL) -> Date? {
 
 func grab(_ args: [String: Any]) -> (String, Bool) {
     guard let name = args["name"] as? String, ShelfName.isSafe(name) else {
-        return ("Недопустимое имя файла.", true)
+        return ("Invalid file name.", true)
     }
     let src = shelfDir.appendingPathComponent(name)
     guard FileManager.default.fileExists(atPath: src.path) else {
-        return ("На полке нет файла «\(name)». Список — shelf_list.", true)
+        return ("No file \"\(name)\" on the shelf. See shelf_list.", true)
     }
     let destDir = URL(fileURLWithPath: (args["dest"] as? String) ?? FileManager.default.currentDirectoryPath,
                       isDirectory: true)
@@ -123,20 +123,20 @@ func grab(_ args: [String: Any]) -> (String, Bool) {
         if (args["keep"] as? Bool) == false {
             try? FileManager.default.trashItem(at: src, resultingItemURL: nil)
         }
-        return ("Файл скопирован: \(dst.path)", false)
+        return ("File copied: \(dst.path)", false)
     } catch {
-        return ("Не удалось забрать «\(name)»: \(error.localizedDescription)", true)
+        return ("Failed to take \"\(name)\": \(error.localizedDescription)", true)
     }
 }
 
 func put(_ args: [String: Any]) -> (String, Bool) {
     guard let rawPath = args["path"] as? String, !rawPath.isEmpty else {
-        return ("Нужен параметр path.", true)
+        return ("The path parameter is required.", true)
     }
     let src = URL(fileURLWithPath: rawPath, relativeTo:
         URL(fileURLWithPath: FileManager.default.currentDirectoryPath)).standardizedFileURL
     guard FileManager.default.fileExists(atPath: src.path) else {
-        return ("Файла нет: \(src.path)", true)
+        return ("No such file: \(src.path)", true)
     }
     do {
         try FileManager.default.createDirectory(at: shelfDir, withIntermediateDirectories: true)
@@ -146,41 +146,41 @@ func put(_ args: [String: Any]) -> (String, Bool) {
         try FileManager.default.copyItem(at: src, to: dst)
 
         guard (args["send"] as? Bool) == true else {
-            return ("Файл на полке этой машины: \(name). На пира не отправлялся (send=false).", false)
+            return ("File is on this Mac's shelf: \(name). Not sent to the peer (send=false).", false)
         }
         guard let peerRaw = Settings.string("peerHost"),
               case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
               !peer.isEmpty else {
-            return ("Файл на полке (\(name)), но peerHost не настроен — отправить некуда.", true)
+            return ("File is on the shelf (\(name)), but peerHost is not set, so there is nowhere to send it.", true)
         }
         guard PeerHost.isValid(peer) else {
-            return ("Файл на полке (\(name)), но peerHost «\(peer)» не прошёл валидацию.", true)
+            return ("File is on the shelf (\(name)), but peerHost \"\(peer)\" failed validation.", true)
         }
         guard runProcess(PushPlan.sshExecutable, PushPlan.mkdirArgs(peer: peer)) == nil else {
-            return ("Файл на полке (\(name)), но пир недоступен по ssh.", true)
+            return ("File is on the shelf (\(name)), but the peer is unreachable over ssh.", true)
         }
         if let err = runProcess(PushPlan.rsyncExecutable, PushPlan.rsyncArgs(filePath: dst.path, peer: peer)) {
-            return ("Файл на полке (\(name)), но отправка на \(peer) не удалась: \(err)", true)
+            return ("File is on the shelf (\(name)), but sending to \(peer) failed: \(err)", true)
         }
-        return ("Файл на полке и отправлен на \(peer): \(name)", false)
+        return ("File is on the shelf and sent to \(peer): \(name)", false)
     } catch {
-        return ("Не удалось положить на полку: \(error.localizedDescription)", true)
+        return ("Failed to put the file on the shelf: \(error.localizedDescription)", true)
     }
 }
 
 func remove(_ args: [String: Any]) -> (String, Bool) {
     guard let name = args["name"] as? String, ShelfName.isSafe(name) else {
-        return ("Недопустимое имя файла.", true)
+        return ("Invalid file name.", true)
     }
     let src = shelfDir.appendingPathComponent(name)
     guard FileManager.default.fileExists(atPath: src.path) else {
-        return ("На полке нет файла «\(name)».", true)
+        return ("No file \"\(name)\" on the shelf.", true)
     }
     do {
         try FileManager.default.trashItem(at: src, resultingItemURL: nil)
-        return ("«\(name)» убран с полки в Корзину.", false)
+        return ("\"\(name)\" moved from the shelf to the Trash.", false)
     } catch {
-        return ("Не удалось убрать «\(name)»: \(error.localizedDescription)", true)
+        return ("Failed to remove \"\(name)\": \(error.localizedDescription)", true)
     }
 }
 
@@ -197,11 +197,11 @@ func clearShelf(_ args: [String: Any]) -> (String, Bool) {
             failed.append(url.lastPathComponent)
         }
     }
-    var report = urls.isEmpty ? "Локальная полка уже пуста."
-        : "Локальная полка: \(trashed) файл(ов) в Корзине."
+    var report = urls.isEmpty ? "The local shelf is already empty."
+        : "Local shelf: \(trashed) item(s) moved to the Trash."
     var isError = false
     if !failed.isEmpty {
-        report += " Не удалось: \(failed.joined(separator: ", "))."
+        report += " Failed: \(failed.joined(separator: ", "))."
         isError = true
     }
 
@@ -210,12 +210,12 @@ func clearShelf(_ args: [String: Any]) -> (String, Bool) {
        case let peer = peerRaw.trimmingCharacters(in: .whitespaces),
        !peer.isEmpty {
         guard PeerHost.isValid(peer) else {
-            return (report + " Полка пира не тронута: peerHost не прошёл валидацию.", true)
+            return (report + " Peer shelf left untouched: peerHost failed validation.", true)
         }
         if let err = runProcess(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
-            return (report + " Очистка на \(peer) не удалась: \(err) (старая обёртка на пире?)", true)
+            return (report + " Clearing on \(peer) failed: \(err) (old wrapper on the peer?)", true)
         }
-        report += " Полка на \(peer) очищена (в её Корзину)."
+        report += " Shelf on \(peer) cleared (into its Trash)."
     }
     return (report, isError)
 }
@@ -234,7 +234,7 @@ func runProcess(_ tool: String, _ args: [String]) -> String? {
     p.waitUntilExit()
     if p.terminationStatus == 0 { return nil }
     let msg = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-    return (msg?.isEmpty == false ? msg! : "код \(p.terminationStatus)")
+    return (msg?.isEmpty == false ? msg! : "exit code \(p.terminationStatus)")
 }
 
 // MARK: - главный цикл
@@ -281,9 +281,9 @@ while let line = readLine(strippingNewline: true) {
             let (text, isError) = clearShelf(args)
             replyText(id, text, isError: isError)
         default:
-            replyError(id, code: -32602, message: "Неизвестный инструмент")
+            replyError(id, code: -32602, message: "Unknown tool")
         }
     default:
-        if let id { replyError(id, code: -32601, message: "Метод не поддерживается: \(method)") }
+        if let id { replyError(id, code: -32601, message: "Method not supported: \(method)") }
     }
 }

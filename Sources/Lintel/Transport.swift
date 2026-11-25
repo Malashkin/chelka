@@ -19,7 +19,7 @@ final class Transport {
         let trimmed = v.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }
         guard PeerHost.isValid(trimmed) else {
-            NSLog("Lintel: peerHost «\(trimmed)» отклонён валидацией (допустимы hostname/FQDN/IPv4, опционально user@)")
+            NSLog("Lintel: peerHost \"\(trimmed)\" rejected by validation (allowed: hostname/FQDN/IPv4, optional user@)")
             return nil
         }
         return trimmed
@@ -39,7 +39,7 @@ final class Transport {
                         if statuses[file.lastPathComponent] == .sent { clear(file) }
                     }
                 } else if attempt < Self.maxAttempts {
-                    NSLog("Lintel: отправка не удалась (попытка \(attempt)), повтор через \(Int(Self.retryDelay)) с: \(file.lastPathComponent)")
+                    NSLog("Lintel: send failed (attempt \(attempt)), retrying in \(Int(Self.retryDelay)) s: \(file.lastPathComponent)")
                     DispatchQueue.main.asyncAfter(deadline: .now() + Self.retryDelay) { [self] in
                         push(file, attempt: attempt + 1)
                     }
@@ -55,9 +55,9 @@ final class Transport {
         guard let peer = peerHost else { return }
         workQueue.async { [self] in
             if run(PushPlan.sshExecutable, PushPlan.clearArgs(peer: peer)) {
-                NSLog("Lintel: полка на \(peer) очищена")
+                NSLog("Lintel: shelf on \(peer) cleared")
             } else {
-                NSLog("Lintel: очистка полки на \(peer) не удалась (старая обёртка на пире? обновите ~/.lintel-receive)")
+                NSLog("Lintel: clearing the shelf on \(peer) failed (old wrapper on the peer? update its receive wrapper from scripts/lintel-receive.sh)")
             }
         }
     }
@@ -89,14 +89,14 @@ final class Transport {
         p.standardOutput = FileHandle.nullDevice
         p.standardError = errPipe
         do { try p.run() } catch {
-            NSLog("Lintel: не удалось запустить \(tool): \(error.localizedDescription)")
+            NSLog("Lintel: failed to launch \(tool): \(error.localizedDescription)")
             return false
         }
         let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
         if p.terminationStatus != 0 {
             let msg = String(data: errData, encoding: .utf8) ?? ""
-            NSLog("Lintel: \(tool) завершился с кодом \(p.terminationStatus): \(msg)")
+            NSLog("Lintel: \(tool) exited with code \(p.terminationStatus): \(msg)")
             return false
         }
         return true

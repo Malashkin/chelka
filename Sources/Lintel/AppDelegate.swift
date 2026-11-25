@@ -14,9 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self, selector: #selector(screensChanged),
             name: NSApplication.didChangeScreenParametersNotification, object: nil)
         if let peer = transport.peerHost {
-            NSLog("Lintel: пир для отправки — \(peer)")
+            NSLog("Lintel: sending to peer \(peer)")
         } else {
-            NSLog("Lintel: peerHost не задан, полка работает только локально")
+            NSLog("Lintel: peerHost not set, the shelf is local only")
         }
     }
 

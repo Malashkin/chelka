@@ -73,7 +73,7 @@ make install   # build + install to /Applications + launch
 That's it. Hover the notch — the shelf slides out.
 
 - **Relaunch after quitting**: Spotlight (⌘Space) → "Lintel".
-- **Start at login**: right-click the expanded shelf → "Запускать при входе"
+- **Start at login**: right-click the expanded shelf → "Open at Login"
   (Launch at login).
 - **Update after pulling new code**: `make install` again.
 
@@ -139,7 +139,7 @@ Now anything dropped on either shelf appears on both machines.
 No sync loops can occur: the app only pushes files **dropped on that
 machine** — files that arrived from the peer are displayed, never re-sent.
 A file dropped before `peerHost` was configured can be sent later:
-right-click it → "Send to the other machine".
+right-click it → "Send to Other Mac".
 
 ### 4. Lock down the transport key (recommended)
 
@@ -182,10 +182,10 @@ command above to refresh it.)
 | See every file | the shelf grows to 8 columns × 3 rows (newest first); with more files, scroll it with the trackpad or mouse wheel |
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
-| Open the whole shelf folder | "Открыть папку" button at the bottom of the shelf (or right-click the background) — opens `~/Shelf` in Finder |
-| How much is on the shelf | bottom line of the shelf: number of items and their total size, e.g. "12 файлов · 340 МБ" (a dropped folder counts as one item, its size in full) |
-| Send / resend to the peer | right-click the file → "Send to the other machine" |
-| Clear the shelf (both Macs) | right-click the shelf background → "Очистить полку" — clears the peer's shelf too when configured |
+| Open the whole shelf folder | "Open Folder" button at the bottom of the shelf (or right-click the background) — opens `~/Shelf` in Finder |
+| How much is on the shelf | bottom line of the shelf: number of items and their total size, e.g. "12 files · 340 MB" (a dropped folder counts as one item, its size in full) |
+| Send / resend to the peer | right-click the file → "Send to Other Mac" |
+| Clear the shelf (both Macs) | right-click the shelf background → "Clear Shelf" — clears the peer's shelf too when configured |
 | Launch at login | right-click the shelf background |
 | Quit | right-click the shelf background |
 
