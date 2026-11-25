@@ -182,6 +182,8 @@ command above to refresh it.)
 | See every file | the shelf grows to 8 columns × 3 rows (newest first); with more files, scroll it with the trackpad or mouse wheel |
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
+| Open the whole shelf folder | "Открыть папку" button at the bottom of the shelf (or right-click the background) — opens `~/Shelf` in Finder |
+| How much is on the shelf | bottom line of the shelf: number of items and their total size, e.g. "12 файлов · 340 МБ" (a dropped folder counts as one item, its size in full) |
 | Send / resend to the peer | right-click the file → "Send to the other machine" |
 | Clear the shelf (both Macs) | right-click the shelf background → "Очистить полку" — clears the peer's shelf too when configured |
 | Launch at login | right-click the shelf background |

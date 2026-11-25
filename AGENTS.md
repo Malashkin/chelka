@@ -34,7 +34,8 @@ target `Sources/lintel-selftest` (plain assertions, non-zero exit on failure).
 | `Sources/LintelCore/` | pure logic, no AppKit — every function here must be covered in selftest |
 | `Sources/LintelCore/Naming.swift` | unique file names on collision |
 | `Sources/LintelCore/ShelfGeometry.swift` | panel geometry, animation progress |
-| `Sources/LintelCore/ShelfLayout.swift` | file grid on the shelf: columns/rows, scroll range, visible cells |
+| `Sources/LintelCore/ShelfLayout.swift` | file grid on the shelf: columns/rows, scroll range, visible cells, footer + "open folder" button rects |
+| `Sources/LintelCore/ShelfSummary.swift` | footer text: Russian plural, byte formatting, recursive shelf size |
 | `Sources/LintelCore/PeerHost.swift` | peerHost validation (security boundary) |
 | `Sources/LintelCore/Sync.swift` | which shelf files count as newly-arrived |
 | `Sources/Lintel/AppDelegate.swift` | panel lifecycle, screens, frame animation |

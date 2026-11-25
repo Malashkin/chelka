@@ -17,6 +17,8 @@ final class ShelfView: NSView, NSDraggingSource {
     private var itemRects: [(url: URL, rect: NSRect)] = []
     /// Прокрутка сетки вниз (pt), если файлов больше, чем помещается строк.
     private var scrollOffset: CGFloat = 0
+    /// Кнопка «Открыть папку» зажата (рисуется темнее до отпускания).
+    private var buttonPressed = false
     private var layout: ShelfLayout { ShelfLayout(count: store.files.count) }
     private var pressed: (url: URL, point: NSPoint)?
 
@@ -124,7 +126,25 @@ final class ShelfView: NSView, NSDraggingSource {
 
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
+        if expanded, layout.openButtonRect(width: bounds.width, top: topInset).contains(p) {
+            buttonPressed = true
+            needsDisplay = true
+            return
+        }
         pressed = hitItem(at: p).map { ($0.url, p) }
+    }
+
+    // кнопка срабатывает по отпусканию над ней — как обычная кнопка macOS
+    override func mouseUp(with event: NSEvent) {
+        guard buttonPressed else { return }
+        buttonPressed = false
+        needsDisplay = true
+        let p = convert(event.locationInWindow, from: nil)
+        if layout.openButtonRect(width: bounds.width, top: topInset).contains(p) { openShelfFolder() }
+    }
+
+    @objc private func openShelfFolder() {
+        NSWorkspace.shared.open(ShelfStore.dir)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -166,6 +186,9 @@ final class ShelfView: NSView, NSDraggingSource {
             menu.addItem(.separator())
         }
         if !store.files.isEmpty || transport.peerHost != nil {
+            let open = NSMenuItem(title: "Открыть папку полки", action: #selector(openShelfFolder), keyEquivalent: "")
+            open.target = self
+            menu.addItem(open)
             let clear = NSMenuItem(title: "Очистить полку", action: #selector(clearShelf), keyEquivalent: "")
             clear.target = self
             menu.addItem(clear)
@@ -254,6 +277,8 @@ final class ShelfView: NSView, NSDraggingSource {
         let contentAlpha = ShelfGeometry.contentAlpha(progress: progress)
         guard contentAlpha > 0 else { return }
 
+        drawFooter(alpha: contentAlpha)
+
         if store.files.isEmpty {
             let text = "Бросьте файлы сюда"
             let attrs: [NSAttributedString.Key: Any] = [
@@ -262,7 +287,7 @@ final class ShelfView: NSView, NSDraggingSource {
             ]
             let size = text.size(withAttributes: attrs)
             text.draw(at: NSPoint(x: (bounds.width - size.width) / 2,
-                                  y: topInset + (bounds.height - topInset - size.height) / 2),
+                                  y: layout.viewport(width: bounds.width, top: topInset).midY - size.height / 2),
                       withAttributes: attrs)
             return
         }
@@ -309,6 +334,52 @@ final class ShelfView: NSView, NSDraggingSource {
                 NSBezierPath(ovalIn: dotRect).fill()
             }
         }
+    }
+
+    /// Нижняя строка: «N файлов · размер» слева, кнопка «Открыть папку» справа.
+    private func drawFooter(alpha: CGFloat) {
+        let footer = layout.footerRect(width: bounds.width, top: topInset)
+
+        // тонкий разделитель между сеткой и строкой
+        NSColor.white.withAlphaComponent(0.08 * alpha).setFill()
+        NSRect(x: footer.minX, y: footer.minY, width: footer.width, height: 1).fill()
+
+        let textAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 11),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.55 * alpha),
+        ]
+        let summary = ShelfSummary.text(count: store.files.count, bytes: store.totalBytes)
+        let ts = summary.size(withAttributes: textAttrs)
+        summary.draw(at: NSPoint(x: footer.minX + 2, y: footer.midY - ts.height / 2),
+                     withAttributes: textAttrs)
+
+        let button = layout.openButtonRect(width: bounds.width, top: topInset)
+        NSColor.white.withAlphaComponent((buttonPressed ? 0.24 : 0.12) * alpha).setFill()
+        NSBezierPath(roundedRect: button, xRadius: button.height / 2, yRadius: button.height / 2).fill()
+
+        let labelAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.85 * alpha),
+        ]
+        let label = "Открыть папку"
+        let ls = label.size(withAttributes: labelAttrs)
+        let iconSide: CGFloat = 13, gap: CGFloat = 5
+        let startX = button.midX - (iconSide + gap + ls.width) / 2
+        if let icon = NSImage(systemSymbolName: "folder", accessibilityDescription: "Открыть папку")?
+            .withSymbolConfiguration(.init(pointSize: 11, weight: .medium)) {
+            let tinted = NSImage(size: icon.size, flipped: false) { r in
+                icon.draw(in: r)
+                NSColor.white.withAlphaComponent(0.85 * alpha).set()
+                r.fill(using: .sourceAtop)
+                return true
+            }
+            let fit = ShelfGeometry.aspectFitRect(content: tinted.size,
+                                                  in: NSRect(x: startX, y: button.midY - iconSide / 2,
+                                                             width: iconSide, height: iconSide))
+            if let fit { tinted.draw(in: fit, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil) }
+        }
+        label.draw(at: NSPoint(x: startX + iconSide + gap, y: button.midY - ls.height / 2),
+                   withAttributes: labelAttrs)
     }
 
     private func statusColor(for url: URL) -> NSColor? {
