@@ -179,7 +179,7 @@ command above to refresh it.)
 |---|---|
 | Shelve a file | drag it onto the notch (the shelf opens by itself) |
 | Take a file | hover the notch → drag the file out |
-| See every file | the shelf grows to 8 columns × 3 rows (newest first); with more files, scroll it with the trackpad or mouse wheel |
+| See every file | the shelf shows the 5 newest files; click "Show All (N)" at the bottom to expand it to a grid of up to 8 columns × 3 rows (scroll for more), "Show Less" to go back. It returns to the 5 newest each time the shelf collapses |
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
 | Open the whole shelf folder | "Open Folder" button at the bottom of the shelf (or right-click the background) — opens `~/Shelf` in Finder |
