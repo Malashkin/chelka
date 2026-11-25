@@ -15,6 +15,9 @@ final class ShelfView: NSView, NSDraggingSource {
 
     private(set) var expanded = false
     private var itemRects: [(url: URL, rect: NSRect)] = []
+    /// Прокрутка сетки вниз (pt), если файлов больше, чем помещается строк.
+    private var scrollOffset: CGFloat = 0
+    private var layout: ShelfLayout { ShelfLayout(count: store.files.count) }
     private var pressed: (url: URL, point: NSPoint)?
 
     override var isFlipped: Bool { true }
@@ -40,6 +43,7 @@ final class ShelfView: NSView, NSDraggingSource {
     private func setExpanded(_ e: Bool, reason: StaticString = #function) {
         guard expanded != e else { return }
         expanded = e
+        if !e { scrollOffset = 0 }   // следующее раскрытие — с самых свежих
         NSLog("Lintel: полка -> \(e ? "раскрыта" : "свернута") (\(reason))")
         onExpandChange?(e)
         needsDisplay = true
@@ -77,6 +81,26 @@ final class ShelfView: NSView, NSDraggingSource {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
     }
 
+    /// Файл под точкой — только в видимой части сетки: прокрученная
+    /// наполовину ячейка не должна ловить клик под чёлкой.
+    private func hitItem(at p: NSPoint) -> (url: URL, rect: NSRect)? {
+        guard layout.viewport(width: bounds.width, top: topInset).contains(p) else { return nil }
+        return itemRects.first { $0.rect.contains(p) }
+    }
+
+    // MARK: прокрутка (трекпад / колесо), когда файлов больше видимых строк
+
+    override func scrollWheel(with event: NSEvent) {
+        let l = layout
+        guard expanded, l.maxScroll > 0 else { return }
+        // у колеса мыши дельты в «строках», у трекпада — в точках
+        let dy = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY : event.scrollingDeltaY * 12
+        let next = l.clampScroll(scrollOffset - dy)
+        guard next != scrollOffset else { return }
+        scrollOffset = next
+        needsDisplay = true
+    }
+
     // MARK: приём drag'а
 
     override func draggingEntered(_ info: NSDraggingInfo) -> NSDragOperation {
@@ -100,7 +124,7 @@ final class ShelfView: NSView, NSDraggingSource {
 
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        pressed = itemRects.first { $0.rect.contains(p) }.map { ($0.url, p) }
+        pressed = hitItem(at: p).map { ($0.url, p) }
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -129,7 +153,7 @@ final class ShelfView: NSView, NSDraggingSource {
     override func menu(for event: NSEvent) -> NSMenu? {
         let p = convert(event.locationInWindow, from: nil)
         let menu = NSMenu()
-        if let hit = itemRects.first(where: { $0.rect.contains(p) }) {
+        if let hit = hitItem(at: p) {
             menu.addItem(makeItem("Убрать с полки", #selector(removeItem(_:)), hit.url))
             menu.addItem(makeItem("Показать в Finder", #selector(revealItem(_:)), hit.url))
             // отправка доступна для любого файла: дропнутые до настройки
@@ -206,7 +230,8 @@ final class ShelfView: NSView, NSDraggingSource {
     /// перерисовывается на каждом шаге, так что контент плавно проявляется
     /// и растёт вместе с окном.
     private var expandProgress: CGFloat {
-        ShelfGeometry.expandProgress(height: bounds.height, topInset: topInset)
+        ShelfGeometry.expandProgress(height: bounds.height, topInset: topInset,
+                                     contentHeight: layout.contentHeight)
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -240,6 +265,20 @@ final class ShelfView: NSView, NSDraggingSource {
                                   y: topInset + (bounds.height - topInset - size.height) / 2),
                       withAttributes: attrs)
             return
+        }
+
+        // прокрученные ячейки не должны залезать под чёлку и за низ полки
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(rect: layout.viewport(width: bounds.width, top: topInset)).addClip()
+        defer { NSGraphicsContext.restoreGraphicsState() }
+
+        if let ind = layout.scrollIndicator(scroll: scrollOffset) {
+            let track = layout.viewport(width: bounds.width, top: topInset).insetBy(dx: 0, dy: 4)
+            let h = max(16, track.height * ind.fraction)
+            let bar = NSRect(x: bounds.width - 8, y: track.minY + (track.height - h) * ind.position,
+                             width: 3, height: h)
+            NSColor.white.withAlphaComponent(0.35 * contentAlpha).setFill()
+            NSBezierPath(roundedRect: bar, xRadius: 1.5, yRadius: 1.5).fill()
         }
 
         for (url, rect) in itemRects {
@@ -293,14 +332,12 @@ final class ShelfView: NSView, NSDraggingSource {
     private func layoutItems() {
         itemRects = []
         guard expandProgress > 0.02 else { return }
-        let cellW: CGFloat = 76
-        let cellH: CGFloat = 74
-        var x: CGFloat = 14
-        let y = topInset + 8
-        for url in store.files {
-            if x + cellW > bounds.width - 14 { break } // MVP: без скролла
-            itemRects.append((url, NSRect(x: x, y: y, width: cellW, height: cellH)))
-            x += cellW
+        let l = layout
+        let files = store.files
+        scrollOffset = l.clampScroll(scrollOffset)   // файлов могло стать меньше
+        for i in l.visibleIndices(width: bounds.width, top: topInset, scroll: scrollOffset) {
+            itemRects.append((files[i], l.itemRect(index: i, width: bounds.width,
+                                                   top: topInset, scroll: scrollOffset)))
         }
     }
 }
