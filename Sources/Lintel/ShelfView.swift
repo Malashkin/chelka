@@ -46,7 +46,7 @@ final class ShelfView: NSView, NSDraggingSource {
         guard expanded != e else { return }
         expanded = e
         if !e { scrollOffset = 0 }   // следующее раскрытие — с самых свежих
-        NSLog("Lintel: полка -> \(e ? "раскрыта" : "свернута") (\(reason))")
+        NSLog("Lintel: shelf -> \(e ? "expanded" : "collapsed") (\(reason))")
         onExpandChange?(e)
         needsDisplay = true
     }
@@ -174,32 +174,32 @@ final class ShelfView: NSView, NSDraggingSource {
         let p = convert(event.locationInWindow, from: nil)
         let menu = NSMenu()
         if let hit = hitItem(at: p) {
-            menu.addItem(makeItem("Убрать с полки", #selector(removeItem(_:)), hit.url))
-            menu.addItem(makeItem("Показать в Finder", #selector(revealItem(_:)), hit.url))
+            menu.addItem(makeItem("Remove from Shelf", #selector(removeItem(_:)), hit.url))
+            menu.addItem(makeItem("Show in Finder", #selector(revealItem(_:)), hit.url))
             // отправка доступна для любого файла: дропнутые до настройки
             // peerHost иначе никак не дослать
             if transport.peerHost != nil, transport.status(for: hit.url) != .uploading {
                 let title = transport.status(for: hit.url) == .failed
-                    ? "Отправить ещё раз" : "Отправить на вторую машину"
+                    ? "Send Again" : "Send to Other Mac"
                 menu.addItem(makeItem(title, #selector(retryItem(_:)), hit.url))
             }
             menu.addItem(.separator())
         }
         if !store.files.isEmpty || transport.peerHost != nil {
-            let open = NSMenuItem(title: "Открыть папку полки", action: #selector(openShelfFolder), keyEquivalent: "")
+            let open = NSMenuItem(title: "Open Shelf Folder", action: #selector(openShelfFolder), keyEquivalent: "")
             open.target = self
             menu.addItem(open)
-            let clear = NSMenuItem(title: "Очистить полку", action: #selector(clearShelf), keyEquivalent: "")
+            let clear = NSMenuItem(title: "Clear Shelf", action: #selector(clearShelf), keyEquivalent: "")
             clear.target = self
             menu.addItem(clear)
         }
 
-        let login = NSMenuItem(title: "Запускать при входе", action: #selector(toggleLoginItem), keyEquivalent: "")
+        let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
         login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
 
-        let quit = NSMenuItem(title: "Завершить Lintel", action: #selector(quitApp), keyEquivalent: "")
+        let quit = NSMenuItem(title: "Quit Lintel", action: #selector(quitApp), keyEquivalent: "")
         quit.target = self
         menu.addItem(quit)
         return menu
@@ -213,7 +213,7 @@ final class ShelfView: NSView, NSDraggingSource {
                 try SMAppService.mainApp.register()
             }
         } catch {
-            NSLog("Lintel: не удалось изменить автозапуск: \(error.localizedDescription)")
+            NSLog("Lintel: failed to change Open at Login: \(error.localizedDescription)")
         }
     }
 
@@ -280,7 +280,7 @@ final class ShelfView: NSView, NSDraggingSource {
         drawFooter(alpha: contentAlpha)
 
         if store.files.isEmpty {
-            let text = "Бросьте файлы сюда"
+            let text = "Drop files here"
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 13),
                 .foregroundColor: NSColor.white.withAlphaComponent(0.55 * contentAlpha),
@@ -361,11 +361,11 @@ final class ShelfView: NSView, NSDraggingSource {
             .font: NSFont.systemFont(ofSize: 11, weight: .medium),
             .foregroundColor: NSColor.white.withAlphaComponent(0.85 * alpha),
         ]
-        let label = "Открыть папку"
+        let label = "Open Folder"
         let ls = label.size(withAttributes: labelAttrs)
         let iconSide: CGFloat = 13, gap: CGFloat = 5
         let startX = button.midX - (iconSide + gap + ls.width) / 2
-        if let icon = NSImage(systemSymbolName: "folder", accessibilityDescription: "Открыть папку")?
+        if let icon = NSImage(systemSymbolName: "folder", accessibilityDescription: "Open Folder")?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium)) {
             let tinted = NSImage(size: icon.size, flipped: false) { r in
                 icon.draw(in: r)

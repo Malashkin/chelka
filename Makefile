@@ -28,6 +28,6 @@ install: app
 PEER ?= $(shell defaults read dev.mike.Lintel deployPeer 2>/dev/null || defaults read dev.mike.Chelka deployPeer 2>/dev/null)
 
 deploy: install
-	@test -n "$(PEER)" || { echo "Не задан пир: make deploy PEER=<host> или defaults write dev.mike.Lintel deployPeer <host>"; exit 1; }
+	@test -n "$(PEER)" || { echo "No peer set: make deploy PEER=<host> or defaults write dev.mike.Lintel deployPeer <host>"; exit 1; }
 	rsync -a --delete -e "ssh -o BatchMode=yes" build/Lintel.app $(PEER):/Applications/
 	ssh -o BatchMode=yes $(PEER) 'pkill -x Lintel; pkill -x Chelka; rm -rf /Applications/Chelka.app; sleep 1; open /Applications/Lintel.app'

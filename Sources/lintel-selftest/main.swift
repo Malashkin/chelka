@@ -327,27 +327,25 @@ expectNear(ShelfGeometry.expandProgress(height: 50, topInset: 32, contentHeight:
 
 // MARK: - Нижняя строка полки: сводка и кнопка «Открыть папку»
 
-expect(ShelfSummary.filesWord(1), "файл", "summary: 1 файл")
-expect(ShelfSummary.filesWord(3), "файла", "summary: 3 файла")
-expect(ShelfSummary.filesWord(5), "файлов", "summary: 5 файлов")
-expect(ShelfSummary.filesWord(11), "файлов", "summary: 11 файлов (не «файл»)")
-expect(ShelfSummary.filesWord(12), "файлов", "summary: 12 файлов (не «файла»)")
-expect(ShelfSummary.filesWord(21), "файл", "summary: 21 файл")
-expect(ShelfSummary.filesWord(104), "файла", "summary: 104 файла")
-expect(ShelfSummary.filesWord(111), "файлов", "summary: 111 файлов")
+expect(ShelfSummary.filesWord(1), "file", "summary: 1 file")
+expect(ShelfSummary.filesWord(0), "files", "summary: 0 files")
+expect(ShelfSummary.filesWord(2), "files", "summary: 2 files")
+expect(ShelfSummary.filesWord(21), "files", "summary: 21 files (не русское правило)")
 
-expect(ShelfSummary.formatBytes(0), "0 Б", "bytes: ноль")
-expect(ShelfSummary.formatBytes(999), "999 Б", "bytes: до тысячи — в байтах")
-expect(ShelfSummary.formatBytes(1_000), "1 КБ", "bytes: ровно 1 КБ без «,0»")
-expect(ShelfSummary.formatBytes(1_500_000), "1,5 МБ", "bytes: меньше 10 — с запятой")
-expect(ShelfSummary.formatBytes(340_400_000), "340 МБ", "bytes: от 10 — целое")
-expect(ShelfSummary.formatBytes(999_600), "1 МБ", "bytes: 999,6 КБ не превращается в «1000 КБ»")
-expect(ShelfSummary.formatBytes(9_960_000), "10 МБ", "bytes: 9,96 МБ округляется до 10, не «10,0»")
-expect(ShelfSummary.formatBytes(2_300_000_000), "2,3 ГБ", "bytes: гигабайты")
+expect(ShelfSummary.formatBytes(0), "0 bytes", "bytes: ноль")
+expect(ShelfSummary.formatBytes(1), "1 byte", "bytes: единственное число")
+expect(ShelfSummary.formatBytes(999), "999 bytes", "bytes: до тысячи — в байтах")
+expect(ShelfSummary.formatBytes(1_000), "1 KB", "bytes: ровно 1 KB без «.0»")
+expect(ShelfSummary.formatBytes(1_500_000), "1.5 MB", "bytes: меньше 10 — с точкой")
+expect(ShelfSummary.formatBytes(340_400_000), "340 MB", "bytes: от 10 — целое")
+expect(ShelfSummary.formatBytes(999_600), "1 MB", "bytes: 999.6 KB не превращается в «1000 KB»")
+expect(ShelfSummary.formatBytes(9_960_000), "10 MB", "bytes: 9.96 MB округляется до 10, не «10.0»")
+expect(ShelfSummary.formatBytes(2_300_000_000), "2.3 GB", "bytes: гигабайты")
 
-expect(ShelfSummary.text(count: 0, bytes: 0), "Полка пуста", "summary: пустая полка")
-expect(ShelfSummary.text(count: 12, bytes: nil), "12 файлов · считаю…", "summary: размер ещё считается")
-expect(ShelfSummary.text(count: 3, bytes: 1_500_000), "3 файла · 1,5 МБ", "summary: число и размер")
+expect(ShelfSummary.text(count: 0, bytes: 0), "Shelf is empty", "summary: пустая полка")
+expect(ShelfSummary.text(count: 12, bytes: nil), "12 files · calculating…", "summary: размер ещё считается")
+expect(ShelfSummary.text(count: 1, bytes: 1_500_000), "1 file · 1.5 MB", "summary: один файл и размер")
+expect(ShelfSummary.text(count: 3, bytes: 1_500_000), "3 files · 1.5 MB", "summary: число и размер")
 
 // размер — по реальной временной папке: файл + папка с вложенным и скрытым
 do {
