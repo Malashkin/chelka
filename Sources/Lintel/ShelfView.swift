@@ -12,14 +12,20 @@ final class ShelfView: NSView, NSDraggingSource {
     /// На экране без чёлки рисуем едва заметный pill, чтобы полку было видно.
     var hasNotch = true
     var onExpandChange: ((Bool) -> Void)?
+    /// Раскладка поменялась без сворачивания (Show All / Show Less) — окну нужен новый размер.
+    var onLayoutChange: (() -> Void)?
 
     private(set) var expanded = false
     private var itemRects: [(url: URL, rect: NSRect)] = []
     /// Прокрутка сетки вниз (pt), если файлов больше, чем помещается строк.
     private var scrollOffset: CGFloat = 0
-    /// Кнопка «Открыть папку» зажата (рисуется темнее до отпускания).
-    private var buttonPressed = false
-    private var layout: ShelfLayout { ShelfLayout(count: store.files.count) }
+    /// Показаны все файлы (иначе — только `ShelfLayout.recentLimit` свежих).
+    /// Сбрасывается при сворачивании: по умолчанию полка компактная.
+    private(set) var showAll = false
+    private enum FooterButton { case openFolder, toggle }
+    /// Зажатая кнопка нижней строки (рисуется темнее до отпускания).
+    private var pressedButton: FooterButton?
+    var layout: ShelfLayout { .shelf(total: store.files.count, showAll: showAll) }
     private var pressed: (url: URL, point: NSPoint)?
 
     override var isFlipped: Bool { true }
@@ -45,7 +51,10 @@ final class ShelfView: NSView, NSDraggingSource {
     private func setExpanded(_ e: Bool, reason: StaticString = #function) {
         guard expanded != e else { return }
         expanded = e
-        if !e { scrollOffset = 0 }   // следующее раскрытие — с самых свежих
+        if !e {   // следующее раскрытие — компактное и с самых свежих
+            scrollOffset = 0
+            showAll = false
+        }
         NSLog("Lintel: shelf -> \(e ? "expanded" : "collapsed") (\(reason))")
         onExpandChange?(e)
         needsDisplay = true
@@ -126,21 +135,40 @@ final class ShelfView: NSView, NSDraggingSource {
 
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        if expanded, layout.openButtonRect(width: bounds.width, top: topInset).contains(p) {
-            buttonPressed = true
+        if expanded, let b = footerButton(at: p) {
+            pressedButton = b
             needsDisplay = true
             return
         }
         pressed = hitItem(at: p).map { ($0.url, p) }
     }
 
+    private func footerButton(at p: NSPoint) -> FooterButton? {
+        let l = layout
+        if l.openButtonRect(width: bounds.width, top: topInset).contains(p) { return .openFolder }
+        if l.toggleButtonRect(width: bounds.width, top: topInset)?.contains(p) == true { return .toggle }
+        return nil
+    }
+
     // кнопка срабатывает по отпусканию над ней — как обычная кнопка macOS
     override func mouseUp(with event: NSEvent) {
-        guard buttonPressed else { return }
-        buttonPressed = false
+        guard let b = pressedButton else { return }
+        pressedButton = nil
         needsDisplay = true
         let p = convert(event.locationInWindow, from: nil)
-        if layout.openButtonRect(width: bounds.width, top: topInset).contains(p) { openShelfFolder() }
+        guard footerButton(at: p) == b else { return }
+        switch b {
+        case .openFolder: openShelfFolder()
+        case .toggle: toggleShowAll()
+        }
+    }
+
+    @objc private func toggleShowAll() {
+        showAll.toggle()
+        scrollOffset = 0
+        NSLog("Lintel: shelf -> \(showAll ? "all files" : "recent only")")
+        onLayoutChange?()
+        needsDisplay = true
     }
 
     @objc private func openShelfFolder() {
@@ -253,8 +281,10 @@ final class ShelfView: NSView, NSDraggingSource {
     /// перерисовывается на каждом шаге, так что контент плавно проявляется
     /// и растёт вместе с окном.
     private var expandProgress: CGFloat {
+        // эталон — высота одной строки, а не текущей сетки: иначе при
+        // Show All окно растёт с 1 до 3 строк и контент на миг гаснет
         ShelfGeometry.expandProgress(height: bounds.height, topInset: topInset,
-                                     contentHeight: layout.contentHeight)
+                                     contentHeight: ShelfGeometry.contentHeight)
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -336,7 +366,7 @@ final class ShelfView: NSView, NSDraggingSource {
         }
     }
 
-    /// Нижняя строка: «N файлов · размер» слева, кнопка «Открыть папку» справа.
+    /// Нижняя строка: «N files · size» слева, справа «Show All» / «Show Less» и «Open Folder».
     private func drawFooter(alpha: CGFloat) {
         let footer = layout.footerRect(width: bounds.width, top: topInset)
 
@@ -353,19 +383,29 @@ final class ShelfView: NSView, NSDraggingSource {
         summary.draw(at: NSPoint(x: footer.minX + 2, y: footer.midY - ts.height / 2),
                      withAttributes: textAttrs)
 
-        let button = layout.openButtonRect(width: bounds.width, top: topInset)
-        NSColor.white.withAlphaComponent((buttonPressed ? 0.24 : 0.12) * alpha).setFill()
+        let l = layout
+        drawPill(l.openButtonRect(width: bounds.width, top: topInset), label: "Open Folder",
+                 symbol: "folder", pressed: pressedButton == .openFolder, alpha: alpha)
+        if let t = l.toggleButtonRect(width: bounds.width, top: topInset) {
+            let label = showAll ? "Show Less" : "Show All (\(l.total))"
+            drawPill(t, label: label, symbol: showAll ? "chevron.up" : "chevron.down",
+                     pressed: pressedButton == .toggle, alpha: alpha)
+        }
+    }
+
+    /// Кнопка-«таблетка»: SF Symbol + подпись по центру.
+    private func drawPill(_ button: NSRect, label: String, symbol: String, pressed: Bool, alpha: CGFloat) {
+        NSColor.white.withAlphaComponent((pressed ? 0.24 : 0.12) * alpha).setFill()
         NSBezierPath(roundedRect: button, xRadius: button.height / 2, yRadius: button.height / 2).fill()
 
         let labelAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 11, weight: .medium),
             .foregroundColor: NSColor.white.withAlphaComponent(0.85 * alpha),
         ]
-        let label = "Open Folder"
         let ls = label.size(withAttributes: labelAttrs)
         let iconSide: CGFloat = 13, gap: CGFloat = 5
         let startX = button.midX - (iconSide + gap + ls.width) / 2
-        if let icon = NSImage(systemSymbolName: "folder", accessibilityDescription: "Open Folder")?
+        if let icon = NSImage(systemSymbolName: symbol, accessibilityDescription: label)?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium)) {
             let tinted = NSImage(size: icon.size, flipped: false) { r in
                 icon.draw(in: r)

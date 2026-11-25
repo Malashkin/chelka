@@ -391,6 +391,42 @@ for n in [0, 3, 30] {
 expectNear(ShelfLayout(count: 1).contentHeight, ShelfGeometry.contentHeight,
            "footer: высота полки с одной строкой включает нижнюю строку")
 
+// MARK: - Компактный вид: последние 5, «Show All» раскрывает все
+
+let compact12 = ShelfLayout.shelf(total: 12, showAll: false)
+expect([compact12.count, compact12.total, compact12.hiddenCount], [5, 12, 7],
+       "compact: из 12 видно 5 свежих, 7 скрыто")
+expect([compact12.columns, compact12.rows], [5, 1], "compact: 5 файлов — одна строка")
+expectNear(compact12.contentHeight, ShelfGeometry.contentHeight, "compact: высота как у одной строки")
+expect(compact12.canToggle, true, "compact: при 12 файлах кнопка «Show All» есть")
+let all12 = ShelfLayout.shelf(total: 12, showAll: true)
+expect([all12.count, all12.hiddenCount, all12.rows], [12, 0, 2], "showAll: все 12, две строки")
+expect(all12.canToggle, true, "showAll: кнопка «Show Less» остаётся")
+for n in [0, 3, 5] {
+    let l = ShelfLayout.shelf(total: n, showAll: false)
+    expect([l.count, l.hiddenCount], [n, 0], "compact(\(n)): всё помещается, ничего не скрыто")
+    expect(l.canToggle, false, "compact(\(n)): переключатель не нужен")
+    expect(l.toggleButtonRect(width: 636, top: 32) == nil, true, "compact(\(n)): кнопки нет")
+}
+expect(ShelfLayout.shelf(total: 6, showAll: false).canToggle, true, "compact: 6-й файл — уже есть что раскрыть")
+expect(ShelfLayout.shelf(total: -3, showAll: true).count, 0, "compact: отрицательное число — пусто")
+expect(ShelfLayout.shelf(total: 30, showAll: true), ShelfLayout(count: 30),
+       "showAll: та же сетка, что и раньше для всех файлов")
+
+for showAll in [false, true] {
+    let l = ShelfLayout.shelf(total: 30, showAll: showAll)
+    let w: CGFloat = 480, top: CGFloat = 32
+    guard let t = l.toggleButtonRect(width: w, top: top) else {
+        print("FAIL toggle(\(showAll)): кнопки нет"); failures += 1; continue
+    }
+    let open = l.openButtonRect(width: w, top: top)
+    let footer = l.footerRect(width: w, top: top)
+    expect(footer.contains(t), true, "toggle(\(showAll)): внутри нижней строки")
+    expect(t.intersects(open), false, "toggle(\(showAll)): не перекрывает «Open Folder»")
+    expectNear(t.maxX + ShelfLayout.buttonGap, open.minX, "toggle(\(showAll)): слева от «Open Folder»")
+    expect(t.minX - footer.minX >= 140, true, "toggle(\(showAll)): слева остаётся место под сводку")
+}
+
 // MARK: - Settings: перенос настроек со старого имени (dev.mike.Chelka)
 
 do {

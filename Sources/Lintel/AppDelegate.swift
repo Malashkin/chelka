@@ -56,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         v.topInset = collapsed.height
         v.hasNotch = s.auxiliaryTopLeftArea != nil
         v.onExpandChange = { [weak self] e in self?.applyFrame(expanded: e) }
+        v.onLayoutChange = { [weak self] in self?.applyFrame(expanded: true) }
 
         let p = ShelfPanel(contentRect: collapsed)
         p.contentView = v
@@ -77,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyFrame(expanded: Bool, animated: Bool = true) {
         guard let p = panel, let s = targetScreen else { return }
         let target = expanded
-            ? Self.expandedRect(for: s, layout: ShelfLayout(count: store.files.count))
+            ? Self.expandedRect(for: s, layout: view?.layout ?? .shelf(total: store.files.count, showAll: false))
             : Self.collapsedRect(for: s)
         // p.frame во время анимации — промежуточный, сравниваем с целью:
         // перезапуск той же анимации с середины выглядит как дёрганье

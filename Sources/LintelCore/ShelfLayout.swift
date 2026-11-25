@@ -16,22 +16,45 @@ public struct ShelfLayout: Equatable {
     public static let openButtonSize = CGSize(width: 128, height: 20)
     public static let defaultMaxColumns = 8
     public static let defaultMaxVisibleRows = 3
+    /// Свёрнутый вид полки: показываются только самые свежие файлы.
+    public static let recentLimit = 5
+    /// Кнопка «Show All (N)» / «Show Less» — слева от «Open Folder».
+    public static let toggleButtonSize = CGSize(width: 104, height: 20)
+    public static let buttonGap: CGFloat = 6
 
+    /// Сколько ячеек раскладывается (видимые файлы).
     public let count: Int
+    /// Сколько файлов на полке всего (count может быть меньше — компактный вид).
+    public let total: Int
     public let columns: Int
     public let rows: Int
     public let visibleRows: Int
 
     public init(count: Int,
+                total: Int? = nil,
                 maxColumns: Int = defaultMaxColumns,
                 maxVisibleRows: Int = defaultMaxVisibleRows) {
         let n = max(0, count)
         let maxCols = max(1, maxColumns)
         self.count = n
+        self.total = max(n, total ?? n)
         columns = max(1, min(n, maxCols))
         rows = (n + columns - 1) / columns
         visibleRows = max(1, min(rows, max(1, maxVisibleRows)))
     }
+
+    /// Раскладка полки с `total` файлами: компактно — только `recentLimit`
+    /// самых свежих, `showAll` — все (сетка со скроллом).
+    public static func shelf(total: Int, showAll: Bool) -> ShelfLayout {
+        let t = max(0, total)
+        return ShelfLayout(count: showAll ? t : min(t, recentLimit), total: t)
+    }
+
+    /// Файлов на полке, которые сейчас не показаны.
+    public var hiddenCount: Int { total - count }
+
+    /// Переключатель «все / последние 5» нужен, только если файлов больше лимита.
+    public var canToggle: Bool { total > Self.recentLimit }
 
     /// Ширина, нужная сетке (с боковыми отступами). Окно может быть шире —
     /// тогда сетка центрируется.
@@ -57,6 +80,15 @@ public struct ShelfLayout: Equatable {
         let f = footerRect(width: width, top: top)
         let s = Self.openButtonSize
         return CGRect(x: f.maxX - s.width, y: f.midY - s.height / 2,
+                      width: s.width, height: s.height)
+    }
+
+    /// Кнопка «Show All» / «Show Less» — слева от «Open Folder»; nil, если не нужна.
+    public func toggleButtonRect(width: CGFloat, top: CGFloat) -> CGRect? {
+        guard canToggle else { return nil }
+        let open = openButtonRect(width: width, top: top)
+        let s = Self.toggleButtonSize
+        return CGRect(x: open.minX - Self.buttonGap - s.width, y: open.minY,
                       width: s.width, height: s.height)
     }
 
