@@ -179,6 +179,7 @@ command above to refresh it.)
 |---|---|
 | Shelve a file | drag it onto the notch (the shelf opens by itself) |
 | Take a file | hover the notch → drag the file out |
+| See every file | the shelf grows to 8 columns × 3 rows (newest first); with more files, scroll it with the trackpad or mouse wheel |
 | Remove from shelf | right-click the file → remove (goes to Trash) |
 | Reveal in Finder | right-click the file |
 | Send / resend to the peer | right-click the file → "Send to the other machine" |
@@ -319,7 +320,6 @@ Full audit — threat model, findings, verification — lives in
 
 - Sandbox is off (the app spawns ssh/rsync) — so no Mac App Store.
 - Push-only sync: removing a file from one shelf does not remove it from the other.
-- No scrolling: the shelf shows as many files as fit its width.
 - Folders transfer, but appear on the receiver before their contents finish
   copying (rsync's atomic rename covers single files only).
 

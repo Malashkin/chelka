@@ -1,0 +1,85 @@
+import Foundation
+import CoreGraphics
+
+/// Раскладка файлов на раскрытой полке — сетка, растущая вширь до
+/// `maxColumns`, затем вниз до `maxVisibleRows`; дальше — вертикальный скролл.
+/// Координаты — во flipped-системе вида полки (y растёт вниз), `top` — низ
+/// зоны чёлки (topInset).
+public struct ShelfLayout: Equatable {
+    public static let cell = CGSize(width: 76, height: 74)
+    /// Отступ сетки от боковых краёв полки.
+    public static let sidePadding: CGFloat = 14
+    public static let topPadding: CGFloat = 8
+    public static let bottomPadding: CGFloat = 10
+    public static let defaultMaxColumns = 8
+    public static let defaultMaxVisibleRows = 3
+
+    public let count: Int
+    public let columns: Int
+    public let rows: Int
+    public let visibleRows: Int
+
+    public init(count: Int,
+                maxColumns: Int = defaultMaxColumns,
+                maxVisibleRows: Int = defaultMaxVisibleRows) {
+        let n = max(0, count)
+        let maxCols = max(1, maxColumns)
+        self.count = n
+        columns = max(1, min(n, maxCols))
+        rows = (n + columns - 1) / columns
+        visibleRows = max(1, min(rows, max(1, maxVisibleRows)))
+    }
+
+    /// Ширина, нужная сетке (с боковыми отступами). Окно может быть шире —
+    /// тогда сетка центрируется.
+    public var contentWidth: CGFloat {
+        Self.sidePadding * 2 + CGFloat(columns) * Self.cell.width
+    }
+
+    /// Высота контентной части полки под чёлкой. Для одной строки — 92,
+    /// как было до сетки (ShelfGeometry.contentHeight).
+    public var contentHeight: CGFloat {
+        Self.topPadding + CGFloat(visibleRows) * Self.cell.height + Self.bottomPadding
+    }
+
+    /// На сколько можно прокрутить вниз; 0 — всё помещается.
+    public var maxScroll: CGFloat {
+        CGFloat(rows - visibleRows) * Self.cell.height
+    }
+
+    public func clampScroll(_ offset: CGFloat) -> CGFloat {
+        min(max(offset, 0), maxScroll)
+    }
+
+    /// Окно, в котором видны ячейки: от верха сетки на высоту видимых строк.
+    public func viewport(width: CGFloat, top: CGFloat) -> CGRect {
+        CGRect(x: 0, y: top + Self.topPadding,
+               width: width, height: CGFloat(visibleRows) * Self.cell.height)
+    }
+
+    /// Ячейка файла с индексом `index` (0 — самый свежий, слева сверху).
+    public func itemRect(index: Int, width: CGFloat, top: CGFloat, scroll: CGFloat) -> CGRect {
+        let col = index % columns
+        let row = index / columns
+        let gridWidth = CGFloat(columns) * Self.cell.width
+        let originX = max(Self.sidePadding, ((width - gridWidth) / 2).rounded())
+        return CGRect(x: originX + CGFloat(col) * Self.cell.width,
+                      y: top + Self.topPadding + CGFloat(row) * Self.cell.height - clampScroll(scroll),
+                      width: Self.cell.width, height: Self.cell.height)
+    }
+
+    /// Индексы ячеек, хотя бы частично попадающих в видимое окно.
+    public func visibleIndices(width: CGFloat, top: CGFloat, scroll: CGFloat) -> [Int] {
+        let vp = viewport(width: width, top: top)
+        return (0..<count).filter {
+            itemRect(index: $0, width: width, top: top, scroll: scroll).intersects(vp)
+        }
+    }
+
+    /// Ползунок скролла: доля видимого и положение (0…1), nil — скролл не нужен.
+    public func scrollIndicator(scroll: CGFloat) -> (fraction: CGFloat, position: CGFloat)? {
+        guard maxScroll > 0 else { return nil }
+        let fraction = CGFloat(visibleRows) / CGFloat(rows)
+        return (fraction, clampScroll(scroll) / maxScroll)
+    }
+}

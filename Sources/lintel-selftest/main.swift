@@ -262,6 +262,69 @@ expect(ShelfName.isSafe("../secret"), false, "name: path traversal отклон�
 expect(ShelfName.isSafe(".ssh"), false, "name: скрытые файлы отклонены")
 expect(ShelfName.isSafe(""), false, "name: пустое отклонено")
 
+// MARK: - ShelfLayout: видны все файлы полки, а не первые 5
+
+let cellW = ShelfLayout.cell.width, cellH = ShelfLayout.cell.height
+let one = ShelfLayout(count: 1)
+expect([one.columns, one.rows, one.visibleRows], [1, 1, 1], "layout: один файл — одна ячейка")
+expectNear(one.contentHeight, ShelfGeometry.contentHeight, "layout: одна строка — прежняя высота 92")
+expect(ShelfLayout(count: 0).rows, 0, "layout: пустая полка — строк нет")
+expectNear(ShelfLayout(count: 0).contentHeight, ShelfGeometry.contentHeight,
+           "layout: пустая полка — место под подсказку как раньше")
+
+let six = ShelfLayout(count: 6)
+expect([six.columns, six.rows], [6, 1], "layout: 6 файлов — одна строка (раньше 6-й пропадал)")
+let nine = ShelfLayout(count: 9)
+expect([nine.columns, nine.rows, nine.visibleRows], [8, 2, 2], "layout: 9 файлов — перенос на 2-ю строку")
+expectNear(nine.contentWidth, 14 * 2 + 8 * cellW, "layout: ширина 8 колонок + отступы")
+expectNear(nine.maxScroll, 0, "layout: 2 строки помещаются без скролла")
+
+let many = ShelfLayout(count: 30)
+expect([many.rows, many.visibleRows], [4, 3], "layout: 30 файлов — 4 строки, видно 3")
+expectNear(many.maxScroll, cellH, "layout: прокрутка ровно на одну строку")
+expectNear(many.clampScroll(-50), 0, "layout: скролл не уходит выше начала")
+expectNear(many.clampScroll(10_000), cellH, "layout: скролл не уходит ниже конца")
+
+// каждый файл достижим: видим сразу или после прокрутки до конца
+let w: CGFloat = 640, top: CGFloat = 32
+let atStart = Set(many.visibleIndices(width: w, top: top, scroll: 0))
+let atEnd = Set(many.visibleIndices(width: w, top: top, scroll: many.maxScroll))
+expect(atStart.union(atEnd), Set(0..<30), "layout: все 30 файлов достижимы скроллом")
+expect(atStart.contains(29), false, "layout: последняя строка без скролла не видна")
+expect(atEnd.contains(0), false, "layout: после прокрутки первая строка уходит")
+
+let r0 = many.itemRect(index: 0, width: w, top: top, scroll: 0)
+let r9 = many.itemRect(index: 9, width: w, top: top, scroll: 0)
+expectNear(r0.minY, top + ShelfLayout.topPadding, "layout: первая строка сразу под чёлкой")
+expectNear(r9.minX, r0.minX + cellW, "layout: 10-й файл — 2-я колонка 2-й строки")
+expectNear(r9.minY, r0.minY + cellH, "layout: 10-й файл — 2-я строка")
+expectNear(many.itemRect(index: 0, width: w, top: top, scroll: 20).minY, r0.minY - 20,
+           "layout: скролл сдвигает сетку вверх")
+expectNear(ShelfLayout(count: 2).itemRect(index: 0, width: 480, top: top, scroll: 0).minX,
+           (480 - 2 * cellW) / 2, "layout: короткая строка по центру под чёлкой")
+
+expect(nine.scrollIndicator(scroll: 0) == nil, true, "layout: без переполнения ползунка нет")
+if let ind = many.scrollIndicator(scroll: many.maxScroll) {
+    expectNear(ind.fraction, 0.75, "layout: ползунок — 3 из 4 строк")
+    expectNear(ind.position, 1, "layout: в конце ползунок внизу")
+} else { print("FAIL layout: нет ползунка при переполнении"); failures += 1 }
+
+// окно полки растёт под сетку
+let grid = ShelfGeometry.expandedRect(screenFrame: screen, collapsed: notch,
+                                      content: CGSize(width: many.contentWidth, height: many.contentHeight))
+expectNear(grid.width, many.contentWidth, "geometry: полка шире под 8 колонок")
+expectNear(grid.height, notch.height + many.contentHeight, "geometry: полка выше под 3 строки")
+expectNear(grid.maxY, notch.maxY, "geometry: растёт вниз от чёлки")
+let narrow = CGRect(x: 0, y: 0, width: 500, height: 400)
+expectNear(ShelfGeometry.expandedRect(screenFrame: narrow, collapsed: notch,
+                                      content: CGSize(width: 900, height: 92)).width, 500,
+           "geometry: не шире экрана")
+expectNear(ShelfGeometry.expandProgress(height: 32 + many.contentHeight, topInset: 32,
+                                        contentHeight: many.contentHeight), 1,
+           "progress: высокая полка раскрыта полностью на своей высоте")
+expectNear(ShelfGeometry.expandProgress(height: 50, topInset: 32, contentHeight: 0), 0,
+           "progress: нулевая высота контента не делит на ноль")
+
 // MARK: - Settings: перенос настроек со старого имени (dev.mike.Chelka)
 
 do {

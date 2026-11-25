@@ -4,7 +4,8 @@ import CoreGraphics
 /// Чистая геометрия полки — без AppKit, чтобы её можно было тестировать.
 /// Координаты — в системе экрана macOS (origin слева внизу).
 public enum ShelfGeometry {
-    /// Высота контентной части полки под чёлкой (иконки + подписи + отступы).
+    /// Высота контентной части полки под чёлкой при одной строке файлов
+    /// (иконки + подписи + отступы). Больше строк — см. ShelfLayout.contentHeight.
     public static let contentHeight: CGFloat = 92
     /// На сколько hit-зона шире чёлки с каждой стороны (чтобы попадать курсором).
     public static let hitSlop: CGFloat = 20
@@ -40,9 +41,12 @@ public enum ShelfGeometry {
     /// Раскрытое состояние: шире свернутого, контент — под чёлкой/полоской.
     /// Якорь — верх свернутого состояния (на экране без чёлки полоска ниже
     /// кромки, и полка раскрывается от неё, а не от края экрана).
-    public static func expandedRect(screenFrame: CGRect, collapsed: CGRect) -> CGRect {
-        let w = max(collapsed.width + 180, minExpandedWidth)
-        let h = collapsed.height + contentHeight
+    /// `content` — размер сетки файлов (ShelfLayout): полка растёт под неё,
+    /// но не уже минимума и не шире экрана.
+    public static func expandedRect(screenFrame: CGRect, collapsed: CGRect,
+                                    content: CGSize = CGSize(width: 0, height: contentHeight)) -> CGRect {
+        let w = min(max(collapsed.width + 180, minExpandedWidth, content.width), screenFrame.width)
+        let h = collapsed.height + content.height
         return CGRect(x: (screenFrame.midX - w / 2).rounded(),
                       y: collapsed.maxY - h,
                       width: w,
@@ -51,8 +55,10 @@ public enum ShelfGeometry {
 
     /// Прогресс раскрытия по фактической высоте окна: 0 — свернуто, 1 — раскрыто.
     /// Во время анимации кадра даёт плавное проявление контента.
-    public static func expandProgress(height: CGFloat, topInset: CGFloat) -> CGFloat {
-        min(max((height - topInset) / contentHeight, 0), 1)
+    public static func expandProgress(height: CGFloat, topInset: CGFloat,
+                                      contentHeight: CGFloat = contentHeight) -> CGFloat {
+        guard contentHeight > 0 else { return 0 }
+        return min(max((height - topInset) / contentHeight, 0), 1)
     }
 
     /// Прозрачность контента: проявляется во второй половине анимации.

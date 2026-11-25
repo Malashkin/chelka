@@ -41,8 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                            fallbackTopOffset: offset)
     }
 
-    static func expandedRect(for s: NSScreen) -> NSRect {
-        ShelfGeometry.expandedRect(screenFrame: s.frame, collapsed: collapsedRect(for: s))
+    /// Раскрытая полка растёт под сетку файлов (ShelfLayout).
+    static func expandedRect(for s: NSScreen, layout: ShelfLayout) -> NSRect {
+        ShelfGeometry.expandedRect(screenFrame: s.frame, collapsed: collapsedRect(for: s),
+                                   content: CGSize(width: layout.contentWidth,
+                                                   height: layout.contentHeight))
     }
 
     private func setUpPanel() {
@@ -63,6 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.onChange = { [weak self] in
             ThumbnailCache.shared.prune(keeping: self?.store.files ?? [])
             self?.view?.needsDisplay = true
+            // число файлов меняет размер раскрытой полки (строки/колонки)
+            if let self, let v = self.view, v.expanded { self.applyFrame(expanded: true) }
         }
         transport.onChange = { [weak v] in v?.needsDisplay = true }
     }
@@ -71,7 +76,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func applyFrame(expanded: Bool, animated: Bool = true) {
         guard let p = panel, let s = targetScreen else { return }
-        let target = expanded ? Self.expandedRect(for: s) : Self.collapsedRect(for: s)
+        let target = expanded
+            ? Self.expandedRect(for: s, layout: ShelfLayout(count: store.files.count))
+            : Self.collapsedRect(for: s)
         // p.frame во время анимации — промежуточный, сравниваем с целью:
         // перезапуск той же анимации с середины выглядит как дёрганье
         guard target != animationTarget || !animated else { return }
