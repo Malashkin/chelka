@@ -9,7 +9,14 @@ final class ShelfStore {
         .appendingPathComponent("Shelf", isDirectory: true)
 
     private(set) var files: [URL] = []
+    /// Суммарный размер полки; nil — ещё считается (папки на полке могут
+    /// быть большими, поэтому считаем в фоне после каждого reload).
+    private(set) var totalBytes: Int64?
     var onChange: (() -> Void)?
+
+    private let sizeQueue = DispatchQueue(label: "lintel.shelf-size", qos: .utility)
+    /// Номер последнего reload: результат устаревшего подсчёта отбрасывается.
+    private var sizeGeneration = 0
 
     private var source: DispatchSourceFileSystemObject?
     private var reloadScheduled = false
@@ -83,7 +90,24 @@ final class ShelfStore {
         locallyAdded.formIntersection(current)
 
         files = urls.sorted { mtime($0) > mtime($1) }
+        recomputeSize()
         onChange?()
+    }
+
+    private func recomputeSize() {
+        sizeGeneration += 1
+        let generation = sizeGeneration
+        let snapshot = files
+        // старое значение оставляем, пока считается новое, — без мигания «считаю…»
+        if snapshot.isEmpty { totalBytes = 0 }
+        sizeQueue.async { [weak self] in
+            let bytes = ShelfSummary.totalBytes(of: snapshot)
+            DispatchQueue.main.async {
+                guard let self, generation == self.sizeGeneration else { return }
+                self.totalBytes = bytes
+                self.onChange?()
+            }
+        }
     }
 
     private func mtime(_ url: URL) -> Date {

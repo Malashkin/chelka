@@ -267,7 +267,7 @@ expect(ShelfName.isSafe(""), false, "name: пустое отклонено")
 let cellW = ShelfLayout.cell.width, cellH = ShelfLayout.cell.height
 let one = ShelfLayout(count: 1)
 expect([one.columns, one.rows, one.visibleRows], [1, 1, 1], "layout: один файл — одна ячейка")
-expectNear(one.contentHeight, ShelfGeometry.contentHeight, "layout: одна строка — прежняя высота 92")
+expectNear(one.contentHeight, ShelfGeometry.contentHeight, "layout: одна строка — базовая высота полки")
 expect(ShelfLayout(count: 0).rows, 0, "layout: пустая полка — строк нет")
 expectNear(ShelfLayout(count: 0).contentHeight, ShelfGeometry.contentHeight,
            "layout: пустая полка — место под подсказку как раньше")
@@ -324,6 +324,74 @@ expectNear(ShelfGeometry.expandProgress(height: 32 + many.contentHeight, topInse
            "progress: высокая полка раскрыта полностью на своей высоте")
 expectNear(ShelfGeometry.expandProgress(height: 50, topInset: 32, contentHeight: 0), 0,
            "progress: нулевая высота контента не делит на ноль")
+
+// MARK: - Нижняя строка полки: сводка и кнопка «Открыть папку»
+
+expect(ShelfSummary.filesWord(1), "файл", "summary: 1 файл")
+expect(ShelfSummary.filesWord(3), "файла", "summary: 3 файла")
+expect(ShelfSummary.filesWord(5), "файлов", "summary: 5 файлов")
+expect(ShelfSummary.filesWord(11), "файлов", "summary: 11 файлов (не «файл»)")
+expect(ShelfSummary.filesWord(12), "файлов", "summary: 12 файлов (не «файла»)")
+expect(ShelfSummary.filesWord(21), "файл", "summary: 21 файл")
+expect(ShelfSummary.filesWord(104), "файла", "summary: 104 файла")
+expect(ShelfSummary.filesWord(111), "файлов", "summary: 111 файлов")
+
+expect(ShelfSummary.formatBytes(0), "0 Б", "bytes: ноль")
+expect(ShelfSummary.formatBytes(999), "999 Б", "bytes: до тысячи — в байтах")
+expect(ShelfSummary.formatBytes(1_000), "1 КБ", "bytes: ровно 1 КБ без «,0»")
+expect(ShelfSummary.formatBytes(1_500_000), "1,5 МБ", "bytes: меньше 10 — с запятой")
+expect(ShelfSummary.formatBytes(340_400_000), "340 МБ", "bytes: от 10 — целое")
+expect(ShelfSummary.formatBytes(999_600), "1 МБ", "bytes: 999,6 КБ не превращается в «1000 КБ»")
+expect(ShelfSummary.formatBytes(9_960_000), "10 МБ", "bytes: 9,96 МБ округляется до 10, не «10,0»")
+expect(ShelfSummary.formatBytes(2_300_000_000), "2,3 ГБ", "bytes: гигабайты")
+
+expect(ShelfSummary.text(count: 0, bytes: 0), "Полка пуста", "summary: пустая полка")
+expect(ShelfSummary.text(count: 12, bytes: nil), "12 файлов · считаю…", "summary: размер ещё считается")
+expect(ShelfSummary.text(count: 3, bytes: 1_500_000), "3 файла · 1,5 МБ", "summary: число и размер")
+
+// размер — по реальной временной папке: файл + папка с вложенным и скрытым
+do {
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("lintel-size-test-\(ProcessInfo.processInfo.processIdentifier)")
+    let sub = tmp.appendingPathComponent("folder/inner", isDirectory: true)
+    try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+    try Data(count: 1000).write(to: tmp.appendingPathComponent("a.bin"))
+    try Data(count: 300).write(to: tmp.appendingPathComponent("folder/b.bin"))
+    try Data(count: 200).write(to: sub.appendingPathComponent("c.bin"))
+    try Data(count: 50).write(to: sub.appendingPathComponent(".hidden"))
+    try FileManager.default.createSymbolicLink(at: tmp.appendingPathComponent("link"),
+                                               withDestinationURL: tmp.appendingPathComponent("folder"))
+    let items = [tmp.appendingPathComponent("a.bin"), tmp.appendingPathComponent("folder")]
+    expect(ShelfSummary.totalBytes(of: items), 1550, "size: файл + папка рекурсивно, со скрытым внутри")
+    expect(ShelfSummary.totalBytes(of: [tmp.appendingPathComponent("link")]) < 550, true,
+           "size: симлинк на папку не разыменовывается")
+    expect(ShelfSummary.totalBytes(of: [tmp.appendingPathComponent("нет-такого")]), 0,
+           "size: пропавший файл не роняет подсчёт")
+    expect(ShelfSummary.totalBytes(of: []), 0, "size: пустая полка — 0")
+    try? FileManager.default.removeItem(at: tmp)
+} catch {
+    print("FAIL size: \(error)")
+    failures += 1
+}
+
+// кнопка и строка — под сеткой, вне зоны прокрутки, внутри полки
+for n in [0, 3, 30] {
+    let l = ShelfLayout(count: n)
+    let w: CGFloat = 636, top: CGFloat = 32
+    let vp = l.viewport(width: w, top: top)
+    let footer = l.footerRect(width: w, top: top)
+    let button = l.openButtonRect(width: w, top: top)
+    expect(footer.minY >= vp.maxY, true, "footer(\(n)): ниже сетки, файлы её не перекрывают")
+    expect(footer.contains(button), true, "footer(\(n)): кнопка внутри строки")
+    expect(button.maxY <= top + l.contentHeight, true, "footer(\(n)): кнопка внутри полки по высоте")
+    expectNear(button.maxX, w - ShelfLayout.sidePadding, "footer(\(n)): кнопка прижата вправо")
+    let anyCellHitsButton = (0..<n).contains {
+        l.itemRect(index: $0, width: w, top: top, scroll: 0).intersection(vp).intersects(button)
+    }
+    expect(anyCellHitsButton, false, "footer(\(n)): видимые ячейки не налезают на кнопку")
+}
+expectNear(ShelfLayout(count: 1).contentHeight, ShelfGeometry.contentHeight,
+           "footer: высота полки с одной строкой включает нижнюю строку")
 
 // MARK: - Settings: перенос настроек со старого имени (dev.mike.Chelka)
 

@@ -11,6 +11,9 @@ public struct ShelfLayout: Equatable {
     public static let sidePadding: CGFloat = 14
     public static let topPadding: CGFloat = 8
     public static let bottomPadding: CGFloat = 10
+    /// Нижняя строка: сводка «N файлов · размер» и кнопка «Открыть папку».
+    public static let footerHeight: CGFloat = 24
+    public static let openButtonSize = CGSize(width: 128, height: 20)
     public static let defaultMaxColumns = 8
     public static let defaultMaxVisibleRows = 3
 
@@ -36,10 +39,25 @@ public struct ShelfLayout: Equatable {
         Self.sidePadding * 2 + CGFloat(columns) * Self.cell.width
     }
 
-    /// Высота контентной части полки под чёлкой. Для одной строки — 92,
-    /// как было до сетки (ShelfGeometry.contentHeight).
+    /// Высота контентной части полки под чёлкой: сетка + нижняя строка.
+    /// Для одной строки файлов — ShelfGeometry.contentHeight.
     public var contentHeight: CGFloat {
-        Self.topPadding + CGFloat(visibleRows) * Self.cell.height + Self.bottomPadding
+        Self.topPadding + CGFloat(visibleRows) * Self.cell.height
+            + Self.footerHeight + Self.bottomPadding
+    }
+
+    /// Нижняя строка — сразу под видимой частью сетки, вне зоны прокрутки.
+    public func footerRect(width: CGFloat, top: CGFloat) -> CGRect {
+        CGRect(x: Self.sidePadding, y: viewport(width: width, top: top).maxY,
+               width: max(0, width - Self.sidePadding * 2), height: Self.footerHeight)
+    }
+
+    /// Кнопка «Открыть папку» — справа в нижней строке, по центру по высоте.
+    public func openButtonRect(width: CGFloat, top: CGFloat) -> CGRect {
+        let f = footerRect(width: width, top: top)
+        let s = Self.openButtonSize
+        return CGRect(x: f.maxX - s.width, y: f.midY - s.height / 2,
+                      width: s.width, height: s.height)
     }
 
     /// На сколько можно прокрутить вниз; 0 — всё помещается.

@@ -5,8 +5,9 @@ import CoreGraphics
 /// Координаты — в системе экрана macOS (origin слева внизу).
 public enum ShelfGeometry {
     /// Высота контентной части полки под чёлкой при одной строке файлов
-    /// (иконки + подписи + отступы). Больше строк — см. ShelfLayout.contentHeight.
-    public static let contentHeight: CGFloat = 92
+    /// (иконки + подписи + нижняя строка со сводкой + отступы).
+    /// Больше строк — см. ShelfLayout.contentHeight.
+    public static let contentHeight: CGFloat = 116
     /// На сколько hit-зона шире чёлки с каждой стороны (чтобы попадать курсором).
     public static let hitSlop: CGFloat = 20
     /// Полоска-fallback для экранов без чёлки: крупнее и НЕ у самой кромки —
